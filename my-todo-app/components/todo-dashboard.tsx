@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-
 import {
   Calendar,
   Check,
@@ -13,99 +11,134 @@ import {
   Trash2,
 } from "lucide-react";
 import type React from "react";
+import { useEffect, useState } from "react";
 
-/**
- * Tipos de datos para nuestras tareas
- */
+const API_URL = "http://localhost:4000";
+
 type Priority = "low" | "medium" | "high";
 
 interface Task {
-  id: string;
+  id: number;
   text: string;
   completed: boolean;
-  createdAt: Date;
+  createdAt: Date; // En el estado lo guardamos como Date
   priority: Priority;
   category: string;
 }
 
-export default function TodoDashboard() {
-  // Estado principal de las tareas
-  const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: "1",
-      text: "Review design system updates",
-      completed: false,
-      createdAt: new Date(),
-      priority: "high",
-      category: "Design",
-    },
-    {
-      id: "2",
-      text: "Prepare presentation deck",
-      completed: true,
-      createdAt: new Date(),
-      priority: "medium",
-      category: "Work",
-    },
-    {
-      id: "3",
-      text: "Update client documentation",
-      completed: false,
-      createdAt: new Date(),
-      priority: "low",
-      category: "Docs",
-    },
-  ]);
+type BackendTask = Omit<Task, "createdAt"> & {
+  createdAt: string; // en la API viene como string (ISO)
+};
 
-  // Estado para el input de nueva tarea
+export default function TodoDashboard() {
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState("");
   const [activeFilter, setActiveFilter] = useState<
     "all" | "active" | "completed"
   >("all");
 
-  /**
-   * Maneja la adición de nuevas tareas
-   */
-  const handleAddTask = (e: React.FormEvent) => {
+  // 1) Cargar tareas desde el backend al montar el componente
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const res = await fetch(`${API_URL}/todos`);
+        const data: BackendTask[] = await res.json();
+
+        const normalized: Task[] = data.map((t) => ({
+          ...t,
+          createdAt: new Date(t.createdAt),
+        }));
+
+        setTasks(normalized);
+      } catch (err) {
+        console.error("[frontend] Error al cargar tareas:", err);
+      }
+    };
+
+    fetchTasks();
+  }, []);
+
+  // 2) Crear una nueva tarea en el backend
+  const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTask.trim()) return;
 
-    const task: Task = {
-      id: Math.random().toString(36).substring(2),
-      text: newTask,
-      completed: false,
-      createdAt: new Date(),
-      priority: "medium",
-      category: "General",
-    };
+    try {
+      const res = await fetch(`${API_URL}/todos`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: newTask,
+          priority: "medium",
+          category: "General",
+        }),
+      });
 
-    setTasks([task, ...tasks]);
-    setNewTask("");
+      if (!res.ok) {
+        console.error("[frontend] Error al crear tarea");
+        return;
+      }
+
+      const created: BackendTask = await res.json();
+
+      const task: Task = {
+        ...created,
+        createdAt: new Date(created.createdAt),
+      };
+
+      setTasks((prev) => [task, ...prev]);
+      setNewTask("");
+    } catch (err) {
+      console.error("[frontend] Error en handleAddTask:", err);
+    }
   };
 
-  /**
-   * Alterna el estado de completado de una tarea
-   */
-  const toggleTask = (id: string) => {
-    setTasks(
-      tasks.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))
+  // 3) Alternar completado (PUT /todos/:id)
+  const toggleTask = async (id: number) => {
+    const target = tasks.find((t) => t.id === id);
+    if (!target) return;
+
+    const updatedCompleted = !target.completed;
+
+    // Optimistic UI: actualizamos primero en el estado
+    setTasks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, completed: updatedCompleted } : t))
     );
+
+    try {
+      await fetch(`${API_URL}/todos/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ completed: updatedCompleted }),
+      });
+    } catch (err) {
+      console.error("[frontend] Error al actualizar tarea:", err);
+      // Si quisieras, aquí podrías revertir el cambio en caso de error
+    }
   };
 
-  /**
-   * Elimina una tarea
-   */
-  const deleteTask = (id: string) => {
-    setTasks(tasks.filter((t) => t.id !== id));
+  // 4) Eliminar tarea (DELETE /todos/:id)
+  const deleteTask = async (id: number) => {
+    // Optimistic UI: la quitamos primero
+    setTasks((prev) => prev.filter((t) => t.id !== id));
+
+    try {
+      await fetch(`${API_URL}/todos/${id}`, {
+        method: "DELETE",
+      });
+    } catch (err) {
+      console.error("[frontend] Error al borrar tarea:", err);
+      // Si falla, podrías volver a insertar la tarea en el estado
+    }
   };
 
-  // Métricas calculadas
+  // Métricas
   const completedCount = tasks.filter((t) => t.completed).length;
   const activeCount = tasks.filter((t) => !t.completed).length;
   const completionRate =
     tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
 
-  // Tareas filtradas para renderizar
+  // Filtro
   const filteredTasks = tasks.filter((task) => {
     if (activeFilter === "active") return !task.completed;
     if (activeFilter === "completed") return task.completed;
@@ -114,11 +147,10 @@ export default function TodoDashboard() {
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/20">
-      {/* Fondo de grilla sutil */}
       <div className="fixed inset-0 bg-grid-white pointer-events-none opacity-[0.05]" />
 
       <div className="relative max-w-5xl mx-auto p-6 space-y-10">
-        {/* Header Section - Inspirado en Vercel */}
+        {/* Header */}
         <header className="pt-12 space-y-4">
           <h1 className="text-5xl md:text-7xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
             Focus on <br /> what matters.
@@ -129,7 +161,7 @@ export default function TodoDashboard() {
           </p>
         </header>
 
-        {/* Bento Grid Stats */}
+        {/* Stats */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="group relative overflow-hidden rounded-xl border border-border bg-card p-6 transition-all hover:border-primary/20">
             <div className="flex items-center justify-between mb-4">
@@ -167,7 +199,6 @@ export default function TodoDashboard() {
                 Completion rate today
               </p>
             </div>
-            {/* Barra de progreso visual */}
             <div className="absolute bottom-0 left-0 right-0 h-1 bg-secondary">
               <div
                 className="h-full bg-white transition-all duration-1000 ease-out"
@@ -202,7 +233,7 @@ export default function TodoDashboard() {
           </div>
         </section>
 
-        {/* Add Task Input */}
+        {/* Add Task */}
         <form onSubmit={handleAddTask} className="relative group">
           <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/5 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <div className="relative flex items-center gap-3 p-2 bg-card border border-border rounded-xl shadow-2xl transition-all focus-within:ring-1 focus-within:ring-white/20 focus-within:border-white/20">
@@ -226,9 +257,8 @@ export default function TodoDashboard() {
           </div>
         </form>
 
-        {/* Main List Section */}
+        {/* Main List */}
         <main className="space-y-6">
-          {/* Controls Bar */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6">
             <div className="flex items-center gap-2">
               {(["all", "active", "completed"] as const).map((filter) => (
@@ -256,7 +286,6 @@ export default function TodoDashboard() {
             </div>
           </div>
 
-          {/* Tasks List */}
           <div className="space-y-2 min-h-[300px]">
             {filteredTasks.map((task) => (
               <div
@@ -316,7 +345,7 @@ export default function TodoDashboard() {
           </div>
         </main>
 
-        {/* Footer Documentation */}
+        {/* Footer */}
         <footer className="border-t border-border pt-8 text-sm text-muted-foreground space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
@@ -326,7 +355,8 @@ export default function TodoDashboard() {
               <p className="leading-relaxed max-w-md">
                 Este ToDo list utiliza React y TypeScript con Tailwind CSS v4.
                 Implementa un diseño de Bento Grid para las métricas y utiliza
-                un estado local optimista para una respuesta instantánea.
+                un estado local optimista para una respuesta instantánea
+                sincronizada con un backend en Express.
               </p>
             </div>
             <div>
