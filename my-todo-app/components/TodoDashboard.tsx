@@ -19,7 +19,6 @@ export default function TodoDashboard() {
     toggleTask,
     deleteTask,
     filteredTasks,
-    completedCount,
     activeCount,
     completionRate,
   } = useTodoDashboard();
