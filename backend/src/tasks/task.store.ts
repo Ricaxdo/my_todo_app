@@ -1,77 +1,90 @@
 // src/tasks/task.store.ts
+import { TaskModel, type TaskDocument } from "./task.model";
 import type { Priority, Task } from "./task.types";
 
-let tasks: Task[] = [
-  {
-    id: 1,
-    text: "Primera tarea del backend",
-    completed: false,
-    priority: "medium",
-    category: "General",
-    createdAt: new Date().toISOString(),
-  },
-];
+function mapDocToTask(doc: TaskDocument & { _id: unknown }): Task {
+  // --- createdAt: garantizado por mongoose, pero hacemos guard por TS ---
+  let createdAtIso: string;
 
-let nextId = 2;
+  if (doc.createdAt instanceof Date) {
+    createdAtIso = doc.createdAt.toISOString();
+  } else if (doc.createdAt) {
+    // aquí TS ya sabe que no es undefined
+    createdAtIso = new Date(doc.createdAt).toISOString();
+  } else {
+    // fallback ultra-defensivo, no debería pasar en docs reales
+    createdAtIso = new Date().toISOString();
+  }
 
-export function getAllTasks(): Task[] {
-  return tasks;
+  const result: Task = {
+    id: String(doc._id),
+    text: doc.text,
+    completed: doc.completed,
+    priority: doc.priority,
+    category: doc.category,
+    createdAt: createdAtIso,
+    // NO ponemos updatedAt aquí de inicio
+  };
+
+  // --- updatedAt: solo la agregamos si existe ---
+  if (doc.updatedAt) {
+    let updatedAtIso: string;
+
+    if (doc.updatedAt instanceof Date) {
+      updatedAtIso = doc.updatedAt.toISOString();
+    } else {
+      updatedAtIso = new Date(doc.updatedAt).toISOString();
+    }
+
+    result.updatedAt = updatedAtIso;
+  }
+
+  return result;
 }
 
-export function createTask(input: {
+export async function getAllTasks(): Promise<Task[]> {
+  const docs = await TaskModel.find().sort({ createdAt: -1 }).exec();
+  return docs.map(mapDocToTask);
+}
+
+export async function createTask(input: {
   text: string;
   priority?: Priority;
   category?: string;
-}): Task {
-  const newTask: Task = {
-    id: nextId++,
+}): Promise<Task> {
+  const doc = await TaskModel.create({
     text: input.text,
-    completed: false,
     priority: input.priority ?? "medium",
     category: input.category ?? "General",
-    createdAt: new Date().toISOString(),
-  };
+  });
 
-  tasks.push(newTask);
-  return newTask;
+  return mapDocToTask(doc);
 }
 
 /**
- * Actualiza SOLO campos mutables. No permite tocar `id` ni `createdAt`.
+ * Actualiza SOLO campos mutables.
+ * (text, completed, priority, category)
  */
-export function updateTask(
-  id: number,
-  data: Partial<Omit<Task, "id" | "createdAt">>
-): Task | null {
-  const index = tasks.findIndex((t) => t.id === id);
-  if (index === -1) return null;
+export async function updateTask(
+  id: string,
+  data: Partial<Pick<Task, "text" | "completed" | "priority" | "category">>
+): Promise<Task | null> {
+  const updateData: Record<string, unknown> = {};
 
-  const current = tasks[index];
-  if (!current) return null; // por noUncheckedIndexedAccess
+  if (data.text !== undefined) updateData.text = data.text;
+  if (data.completed !== undefined) updateData.completed = data.completed;
+  if (data.priority !== undefined) updateData.priority = data.priority;
+  if (data.category !== undefined) updateData.category = data.category;
 
-  // Clonamos el actual y vamos sobreescribiendo campos permitidos
-  const updated = { ...current };
+  const doc = await TaskModel.findByIdAndUpdate(id, updateData, {
+    new: true,
+  }).exec();
 
-  if (data.text !== undefined) {
-    updated.text = data.text;
-  }
-  if (data.priority !== undefined) {
-    updated.priority = data.priority;
-  }
-  if (data.category !== undefined) {
-    updated.category = data.category;
-  }
-  if (data.completed !== undefined) {
-    updated.completed = data.completed;
-  }
-
-  // id y createdAt nunca se tocan
-  tasks[index] = updated;
-  return updated;
+  if (!doc) return null;
+  return mapDocToTask(doc);
 }
 
-export function deleteTask(id: number): boolean {
-  const before = tasks.length;
-  tasks = tasks.filter((t) => t.id !== id);
-  return tasks.length < before;
+export async function deleteTask(id: string): Promise<boolean> {
+  const doc = await TaskModel.findByIdAndDelete(id).exec();
+  return doc !== null;
 }

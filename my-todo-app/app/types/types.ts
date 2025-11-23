@@ -1,16 +1,22 @@
-// src/features/todo/types.ts
-
+// src/features/todo/types/types.ts
 export type Priority = "low" | "medium" | "high";
 
-export interface Task {
-  id: number;
+export interface BackendTask {
+  id: string;
   text: string;
   completed: boolean;
-  createdAt: Date; // en el estado lo guardamos como Date
   priority: Priority;
   category: string;
+  createdAt: string;
+  updatedAt?: string; // opcional, igual que en el backend
 }
 
-export type BackendTask = Omit<Task, "createdAt"> & {
-  createdAt: string; // en la API viene como string (ISO)
-};
+export interface Task {
+  id: string;
+  text: string;
+  completed: boolean;
+  priority: Priority;
+  category: string;
+  createdAt: Date;
+  updatedAt?: Date;
+}

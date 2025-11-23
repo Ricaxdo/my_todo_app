@@ -1,7 +1,17 @@
+import { connectDB } from "./db/connect";
 import app from "./server";
 
-const port = process.env.PORT ?? 4000;
+const port = 4000;
 
-app.listen(port, () => {
-  console.log(`[backend] Server running on http://localhost:${port}`);
+async function bootstrap() {
+  await connectDB();
+
+  app.listen(port, () => {
+    console.log(`[backend] Servidor corriendo en http://localhost:${port}`);
+  });
+}
+
+bootstrap().catch((err) => {
+  console.error("[backend] Error al iniciar:", err);
+  process.exit(1);
 });

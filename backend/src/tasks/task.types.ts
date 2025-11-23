@@ -1,11 +1,11 @@
-// src/tasks/task.types.ts
-export type Priority = "high" | "medium" | "low";
+export type Priority = "low" | "medium" | "high";
 
 export interface Task {
-  id: number;
+  id: string;
   text: string;
   completed: boolean;
   priority: Priority;
   category: string;
-  createdAt: string; // ISO string
+  createdAt: string; // ISO
+  updatedAt?: string; // OPCIONAL (no la pongas nunca explícitamente como undefined)
 }

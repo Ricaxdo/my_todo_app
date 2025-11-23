@@ -24,6 +24,7 @@ export function useTodoDashboard() {
         const normalized: Task[] = data.map((t) => ({
           ...t,
           createdAt: new Date(t.createdAt),
+          updatedAt: t.updatedAt ? new Date(t.updatedAt) : undefined,
         }));
 
         setTasks(normalized);
@@ -61,6 +62,7 @@ export function useTodoDashboard() {
       const task: Task = {
         ...created,
         createdAt: new Date(created.createdAt),
+        updatedAt: created.updatedAt ? new Date(created.updatedAt) : undefined,
       };
 
       setTasks((prev) => [task, ...prev]);
@@ -71,13 +73,13 @@ export function useTodoDashboard() {
   };
 
   // 3) Alternar completado (PUT /todos/:id)
-  const toggleTask = async (id: number) => {
+  // antes: (id: number)
+  const toggleTask = async (id: string) => {
     const target = tasks.find((t) => t.id === id);
     if (!target) return;
 
     const updatedCompleted = !target.completed;
 
-    // Optimistic UI
     setTasks((prev) =>
       prev.map((t) => (t.id === id ? { ...t, completed: updatedCompleted } : t))
     );
@@ -90,13 +92,10 @@ export function useTodoDashboard() {
       });
     } catch (err) {
       console.error("[frontend] Error al actualizar tarea:", err);
-      // aquí podrías revertir si quisieras
     }
   };
 
-  // 4) Eliminar tarea (DELETE /todos/:id)
-  const deleteTask = async (id: number) => {
-    // Optimistic UI
+  const deleteTask = async (id: string) => {
     setTasks((prev) => prev.filter((t) => t.id !== id));
 
     try {
@@ -105,7 +104,6 @@ export function useTodoDashboard() {
       });
     } catch (err) {
       console.error("[frontend] Error al borrar tarea:", err);
-      // podrías reinsertarla si falla
     }
   };
 
