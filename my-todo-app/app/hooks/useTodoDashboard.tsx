@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useEffect, useState } from "react";
-import type { BackendTask, Task } from "../types/types";
+import type { BackendTask, Priority, Task } from "../types/types";
 
 const API_URL = "http://localhost:4000";
 
@@ -21,6 +21,7 @@ export function useTodoDashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState("");
   const [activeFilter, setActiveFilter] = useState<Filter>("all");
+  const [priority, setPriority] = useState<Priority>("low");
 
   // 👇 NUEVO: fecha seleccionada
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -62,7 +63,7 @@ export function useTodoDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           text: newTask,
-          priority: "medium",
+          priority, // 👈 usamos la prioridad seleccionada
           category: "General",
         }),
       });
@@ -80,10 +81,9 @@ export function useTodoDashboard() {
         updatedAt: created.updatedAt ? new Date(created.updatedAt) : undefined,
       };
 
-      // Inserta sin romper el orden del historial
       setTasks((prev) => [task, ...prev]);
-
       setNewTask("");
+      setPriority("low"); // 👈 reseteamos a valor por defecto si quieres
     } catch (err) {
       console.error("[frontend] Error en handleAddTask:", err);
     }
@@ -166,12 +166,12 @@ export function useTodoDashboard() {
     newTask,
     activeFilter,
     selectedDate,
-
+    priority,
     // setters
     setNewTask,
     setActiveFilter,
     setSelectedDate,
-
+    setPriority,
     // actions
     handleAddTask,
     toggleTask,

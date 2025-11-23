@@ -23,6 +23,8 @@ export default function TodoDashboard() {
     completionRate,
     selectedDate, // 👈 sin punto
     setSelectedDate,
+    priority,
+    setPriority,
   } = useTodoDashboard();
 
   return (
@@ -43,6 +45,8 @@ export default function TodoDashboard() {
           newTask={newTask}
           setNewTask={setNewTask}
           onSubmit={handleAddTask}
+          priority={priority} // 👈
+          setPriority={setPriority}
         />
 
         <main className="space-y-6">
