@@ -1,4 +1,4 @@
-import TodoDashboard from "@/components/todo-dashboard";
+import TodoDashboard from "@/components/TodoDashboard";
 
 export const metadata = {
   title: "Focus | Modern Todo App",
