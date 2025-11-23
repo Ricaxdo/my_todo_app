@@ -1,4 +1,3 @@
-// src/features/todo/useTodoDashboard.ts
 "use client";
 
 import type React from "react";
@@ -9,12 +8,26 @@ const API_URL = "http://localhost:4000";
 
 type Filter = "all" | "active" | "completed";
 
+// Helper para comparar fechas (solo día, mes, año)
+function isSameDay(a: Date, b: Date) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
 export function useTodoDashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState("");
   const [activeFilter, setActiveFilter] = useState<Filter>("all");
 
-  // 1) Cargar tareas desde el backend al montar el componente
+  // 👇 NUEVO: fecha seleccionada
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+
+  // ================================
+  // 1) Cargar tareas desde backend
+  // ================================
   useEffect(() => {
     const fetchTasks = async () => {
       try {
@@ -36,7 +49,9 @@ export function useTodoDashboard() {
     fetchTasks();
   }, []);
 
-  // 2) Crear una nueva tarea en el backend
+  // ================================
+  // 2) Crear nueva tarea
+  // ================================
   const handleAddTask = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!newTask.trim()) return;
@@ -65,21 +80,25 @@ export function useTodoDashboard() {
         updatedAt: created.updatedAt ? new Date(created.updatedAt) : undefined,
       };
 
+      // Inserta sin romper el orden del historial
       setTasks((prev) => [task, ...prev]);
+
       setNewTask("");
     } catch (err) {
       console.error("[frontend] Error en handleAddTask:", err);
     }
   };
 
-  // 3) Alternar completado (PUT /todos/:id)
-  // antes: (id: number)
+  // ================================
+  // 3) Toggle de completado
+  // ================================
   const toggleTask = async (id: string) => {
     const target = tasks.find((t) => t.id === id);
     if (!target) return;
 
     const updatedCompleted = !target.completed;
 
+    // Optimistic UI
     setTasks((prev) =>
       prev.map((t) => (t.id === id ? { ...t, completed: updatedCompleted } : t))
     );
@@ -95,7 +114,11 @@ export function useTodoDashboard() {
     }
   };
 
+  // ================================
+  // 4) Eliminar tarea
+  // ================================
   const deleteTask = async (id: string) => {
+    // Optimistic UI
     setTasks((prev) => prev.filter((t) => t.id !== id));
 
     try {
@@ -107,31 +130,53 @@ export function useTodoDashboard() {
     }
   };
 
-  // Métricas
-  const completedCount = tasks.filter((t) => t.completed).length;
-  const activeCount = tasks.filter((t) => !t.completed).length;
-  const completionRate =
-    tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
+  // ================================
+  // 5) Filtrar tareas POR FECHA
+  // ================================
+  const tasksForSelectedDate = tasks.filter((t) =>
+    isSameDay(t.createdAt, selectedDate)
+  );
 
-  // Filtro
-  const filteredTasks = tasks.filter((task) => {
+  // ================================
+  // 6) Métricas basadas en esa fecha
+  // ================================
+  const completedCount = tasksForSelectedDate.filter((t) => t.completed).length;
+  const activeCount = tasksForSelectedDate.filter((t) => !t.completed).length;
+
+  const completionRate =
+    tasksForSelectedDate.length > 0
+      ? Math.round((completedCount / tasksForSelectedDate.length) * 100)
+      : 0;
+
+  // ================================
+  // 7) Filtro (all, active, completed)
+  // ================================
+  const filteredTasks = tasksForSelectedDate.filter((task) => {
     if (activeFilter === "active") return !task.completed;
     if (activeFilter === "completed") return task.completed;
     return true;
   });
 
+  // ================================
+  // 8) Retorno público del hook
+  // ================================
   return {
-    // state
+    // raw
     tasks,
     newTask,
     activeFilter,
+    selectedDate,
+
     // setters
     setNewTask,
     setActiveFilter,
+    setSelectedDate,
+
     // actions
     handleAddTask,
     toggleTask,
     deleteTask,
+
     // derivados
     filteredTasks,
     completedCount,

@@ -1,11 +1,11 @@
 import { LayoutGrid } from "lucide-react";
-import type { Task } from "../app/types/types"; // ajusta este path si hace falta
+import type { Task } from "../app/types/types"; // ajusta el path si hace falta
 import TaskItem from "./TaskItem";
 
 type Props = {
   tasks: Task[];
-  toggleTask: (id: number) => void;
-  deleteTask: (id: number) => void;
+  toggleTask: (id: string) => void; // 🔁 string
+  deleteTask: (id: string) => void; // 🔁 string
 };
 
 export default function TaskList({ tasks, toggleTask, deleteTask }: Props) {
@@ -15,8 +15,8 @@ export default function TaskList({ tasks, toggleTask, deleteTask }: Props) {
         <TaskItem
           key={task.id}
           task={task}
-          onToggle={() => toggleTask(task.id)}
-          onDelete={() => deleteTask(task.id)}
+          onToggle={() => toggleTask(task.id)} // ok: task.id es string
+          onDelete={() => deleteTask(task.id)} // ok: task.id es string
         />
       ))}
 

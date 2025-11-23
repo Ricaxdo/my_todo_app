@@ -16,11 +16,13 @@ export default function TodoDashboard() {
     activeFilter,
     setActiveFilter,
     handleAddTask,
-    toggleTask,
-    deleteTask,
+    toggleTask, // (id: string) => Promise<void>
+    deleteTask, // (id: string) => Promise<void>
     filteredTasks,
     activeCount,
     completionRate,
+    selectedDate, // 👈 sin punto
+    setSelectedDate,
   } = useTodoDashboard();
 
   return (
@@ -30,7 +32,12 @@ export default function TodoDashboard() {
       <div className="relative max-w-5xl mx-auto p-6 space-y-10">
         <TodoHeader />
 
-        <TodoStats activeCount={activeCount} completionRate={completionRate} />
+        <TodoStats
+          activeCount={activeCount}
+          completionRate={completionRate}
+          selectedDate={selectedDate}
+          onChangeDate={setSelectedDate}
+        />
 
         <AddTaskForm
           newTask={newTask}
@@ -46,8 +53,8 @@ export default function TodoDashboard() {
 
           <TaskList
             tasks={filteredTasks}
-            toggleTask={toggleTask}
-            deleteTask={deleteTask}
+            toggleTask={toggleTask} // ahora tipos alineados (string)
+            deleteTask={deleteTask} // idem
           />
         </main>
 
