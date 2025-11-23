@@ -1,0 +1,14 @@
+{
+  "name": "todo-monorepo",
+  "private": true,
+  "scripts": {
+    "dev:frontend": "npm --prefix my-todo-app run dev",
+    "dev:backend": "npm --prefix backend run dev",
+    "open:backend": "start http://localhost:4000",
+    "open:frontend": "start http://localhost:3001",
+    "dev": "concurrently \"npm:dev:backend\" \"npm:dev:frontend\" \"npm:open:backend\" \"npm:open:frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
