@@ -4,7 +4,7 @@ import type React from "react";
 import { useEffect, useState } from "react";
 import type { BackendTask, Priority, Task } from "../types/types";
 
-const API_URL = "http://localhost:4000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 type Filter = "all" | "active" | "completed";
 
