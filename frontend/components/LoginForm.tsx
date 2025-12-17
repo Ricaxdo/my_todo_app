@@ -23,8 +23,6 @@ export default function LoginForm() {
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/dashboard";
 
-  router.replace(next);
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -40,7 +38,7 @@ export default function LoginForm() {
 
     try {
       await login({ email, password });
-      router.replace("/dashboard");
+      router.replace(next);
     } catch (err: unknown) {
       // Manejo básico sin any, sin romper eslint
       const message =

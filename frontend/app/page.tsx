@@ -1,5 +1,10 @@
-import { redirect } from "next/navigation";
+import LoginForm from "@/components/LoginForm";
+import { RedirectIfAuth } from "@/components/auth/RedirectIfAuth";
 
 export default function HomePage() {
-  redirect("/login");
+  return (
+    <RedirectIfAuth>
+      <LoginForm />
+    </RedirectIfAuth>
+  );
 }

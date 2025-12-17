@@ -1,4 +1,4 @@
-import { RedirectIfAuth } from "@/components/RedirectIfAuth";
+import { RedirectIfAuth } from "@/components/auth/RedirectIfAuth";
 import SignupForm from "@/components/SignupForm";
 
 export default function SignupPage() {

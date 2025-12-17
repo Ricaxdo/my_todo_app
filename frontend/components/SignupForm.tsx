@@ -8,7 +8,7 @@ import {
   PopoverAnchor,
   PopoverContent,
 } from "@/components/ui/popover";
-import { authApi } from "@/features/auth/auth";
+import { authApi } from "@/features/auth/auth-api";
 import { getErrorMessage } from "@/lib/api/getErrorMessage";
 import { CheckCircle2, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";

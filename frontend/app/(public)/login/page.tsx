@@ -1,5 +1,5 @@
 import LoginForm from "@/components/LoginForm";
-import { RedirectIfAuth } from "@/components/RedirectIfAuth";
+import { RedirectIfAuth } from "@/components/auth/RedirectIfAuth";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

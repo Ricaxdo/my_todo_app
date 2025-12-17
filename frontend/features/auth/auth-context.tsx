@@ -1,7 +1,7 @@
 "use client";
 
-import type { Me } from "@/features/auth/auth";
-import { authApi } from "@/features/auth/auth"; // donde dejaste authApi
+import type { Me } from "@/features/auth/auth-api";
+import { authApi } from "@/features/auth/auth-api"; // donde dejaste authApi
 import type { ApiError } from "@/lib/api/clients";
 import React, {
   createContext,
