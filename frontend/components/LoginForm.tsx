@@ -1,7 +1,6 @@
 "use client";
 
 import { CheckCircle2 } from "lucide-react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
@@ -14,10 +13,13 @@ import { Eye, EyeOff } from "lucide-react";
 
 import { useAuth } from "@/features/auth/auth-context";
 
+import { useNavigationUI } from "@/features/navigation/navigation-context";
+import { AppLink } from "./AppLink";
 import ErrorBanner from "./ErrorBanner";
 
 export default function LoginForm() {
   const router = useRouter();
+  const { start } = useNavigationUI();
   const { login } = useAuth();
 
   const searchParams = useSearchParams();
@@ -38,6 +40,7 @@ export default function LoginForm() {
 
     try {
       await login({ email, password });
+      start();
       router.replace(next);
     } catch (err: unknown) {
       // Manejo básico sin any, sin romper eslint
@@ -194,12 +197,12 @@ export default function LoginForm() {
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
               {"¿No tienes una cuenta? "}
-              <Link
+              <AppLink
                 href="/signup"
                 className="text-foreground hover:text-primary font-medium transition-colors"
               >
                 Regístrate
-              </Link>
+              </AppLink>
             </p>
           </div>
         </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { AppLink } from "@/components/AppLink";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +12,6 @@ import {
 import { authApi } from "@/features/auth/auth-api";
 import { getErrorMessage } from "@/lib/api/getErrorMessage";
 import { CheckCircle2, Eye, EyeOff } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useRef, useState } from "react";
@@ -612,12 +612,12 @@ export default function SignupForm() {
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
               {"¿Ya tienes una cuenta? "}
-              <Link
+              <AppLink
                 href="/login"
                 className="text-foreground hover:text-primary font-medium transition-colors"
               >
                 Inicia sesión
-              </Link>
+              </AppLink>
             </p>
           </div>
         </div>
