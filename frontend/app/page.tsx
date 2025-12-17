@@ -1,10 +1,10 @@
-import TodoDashboard from "@/components/TodoDashboard";
+import LoginForm from "@/components/LoginForm";
 
 export const metadata = {
-  title: "Focus | Modern Todo App",
-  description: "A minimalist todo application for focused work.",
+  title: "Focus | Login",
+  description: "Sign in to access your tasks.",
 };
 
 export default function Page() {
-  return <TodoDashboard />;
+  return <LoginForm />;
 }
