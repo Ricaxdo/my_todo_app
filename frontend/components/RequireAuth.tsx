@@ -15,7 +15,7 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
     }
   }, [isLoading, isAuthenticated, router, pathname]);
 
-  if (isLoading) return null; // o tu spinner/skeleton
+  if (isLoading) return null; // aquí puedes poner spinner/skeleton
   if (!isAuthenticated) return null;
 
   return <>{children}</>;

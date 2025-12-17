@@ -1,4 +1,5 @@
 import LoginForm from "@/components/LoginForm";
+import { RedirectIfAuth } from "@/components/RedirectIfAuth";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default function LoginPage() {
-  return <LoginForm />;
+  return (
+    <RedirectIfAuth>
+      <LoginForm />
+    </RedirectIfAuth>
+  );
 }

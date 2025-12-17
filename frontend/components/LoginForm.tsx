@@ -2,7 +2,7 @@
 
 import { CheckCircle2 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
 
@@ -19,6 +19,11 @@ import ErrorBanner from "./ErrorBanner";
 export default function LoginForm() {
   const router = useRouter();
   const { login } = useAuth();
+
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") || "/dashboard";
+
+  router.replace(next);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
