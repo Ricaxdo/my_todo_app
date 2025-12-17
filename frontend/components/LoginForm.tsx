@@ -12,12 +12,13 @@ import { Label } from "@/components/ui/label";
 
 import { Eye, EyeOff } from "lucide-react";
 
-import { authApi } from "@/features/auth/api";
-import type { ApiError } from "@/lib/apiFetch";
+import { useAuth } from "@/features/auth/auth-context";
+
 import ErrorBanner from "./ErrorBanner";
 
 export default function LoginForm() {
   const router = useRouter();
+  const { login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,12 +34,19 @@ export default function LoginForm() {
     setIsSubmitting(true);
 
     try {
-      await authApi.signin({ email, password });
+      await login({ email, password });
       router.replace("/dashboard");
-    } catch (err) {
-      const e = err as ApiError;
-      if (e.status === 401) setErrorMessage("Email o contraseña incorrectos.");
-      else setErrorMessage(e.message || "Ocurrió un error inesperado.");
+    } catch (err: unknown) {
+      // Manejo básico sin any, sin romper eslint
+      const message =
+        typeof err === "object" && err !== null && "status" in err
+          ? (err as { status?: number; message?: string }).status === 401
+            ? "Email o contraseña incorrectos."
+            : (err as { message?: string }).message ||
+              "Ocurrió un error inesperado."
+          : "Ocurrió un error inesperado.";
+
+      setErrorMessage(message);
     } finally {
       setIsSubmitting(false);
     }

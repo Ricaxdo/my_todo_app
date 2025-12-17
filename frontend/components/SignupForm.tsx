@@ -8,6 +8,8 @@ import {
   PopoverAnchor,
   PopoverContent,
 } from "@/components/ui/popover";
+import { authApi } from "@/features/auth/auth";
+import { getErrorMessage } from "@/lib/api/getErrorMessage";
 import { CheckCircle2, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -89,11 +91,19 @@ export default function SignupForm() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (validateForm()) {
+    if (!validateForm()) return;
+
+    try {
+      await authApi.signup({ name, lastName, phone, email, password });
       router.replace("/login");
+    } catch (err: unknown) {
+      setErrors((prev) => ({
+        ...prev,
+        form: getErrorMessage(err),
+      }));
     }
   };
 
