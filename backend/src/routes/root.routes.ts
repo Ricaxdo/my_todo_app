@@ -1,7 +1,12 @@
 // src/routes/root.routes.ts
 import { Router, type Request, type Response } from "express";
+import { auth } from "../middleware/auth";
 
 export const rootRouter = Router();
+
+rootRouter.get("/protected", auth, (req: Request, res: Response) => {
+  res.json({ ok: true });
+});
 
 rootRouter.get("/", (req: Request, res: Response) => {
   res.type("html").send(`<!DOCTYPE html>

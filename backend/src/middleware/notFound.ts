@@ -1,8 +1,24 @@
-// src/middleware/notFound.ts
-import type { Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 
-export function notFoundHandler(req: Request, res: Response) {
-  res.status(404).type("html").send(`<!DOCTYPE html>
+export function notFoundHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const acceptsHtml = req.accepts("html");
+  const acceptsJson = req.accepts("json");
+
+  // 🟢 Caso API / Frontend
+  if (acceptsJson && !acceptsHtml) {
+    return res.status(404).json({
+      error: {
+        code: "NOT_FOUND",
+        message: "route not found",
+      },
+    });
+  }
+
+  return res.status(404).type("html").send(`<!DOCTYPE html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
