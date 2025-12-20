@@ -1,5 +1,5 @@
-// lib/api/auth.ts
-import { apiFetch } from "@/lib/api/clients";
+// features/api/auth.ts
+import { apiFetch, type ApiError } from "@/lib/api/clients";
 
 export type Me = {
   id: string;
@@ -14,8 +14,8 @@ export type SigninPayload = {
 
 export type SignupPayload = {
   name: string;
-  lastName?: string; // si lo vas a mandar también
-  phone?: string; // si lo vas a mandar también
+  lastName?: string;
+  phone?: string;
   email: string;
   password: string;
 };
@@ -34,11 +34,21 @@ function clearToken() {
   localStorage.removeItem("token");
 }
 
+// 👇 helper para SCRUM-49 (401 credenciales)
+export function isInvalidCredentials(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "status" in err &&
+    (err as ApiError).status === 401
+  );
+}
+
 export const authApi = {
-  me: () => apiFetch<Me>("/users/me"),
+  me: () => apiFetch<Me>("/auth/me"),
 
   signin: async (payload: SigninPayload) => {
-    const res = await apiFetch<AuthResponse>("/auth/signin", {
+    const res = await apiFetch<AuthResponse>("/auth/login", {
       method: "POST",
       body: JSON.stringify(payload),
     });
@@ -48,11 +58,6 @@ export const authApi = {
   },
 
   signup: async (payload: SignupPayload) => {
-    // Si tu backend devuelve token al registrarse:
-    // const res = await apiFetch<AuthResponse>("/auth/signup", {...})
-    // saveToken(res.token); return res;
-
-    // Si tu backend NO devuelve token (solo crea usuario):
     return apiFetch<{ id: string; name: string; email: string }>(
       "/auth/signup",
       {

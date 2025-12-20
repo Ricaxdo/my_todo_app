@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
@@ -9,18 +9,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { Eye, EyeOff } from "lucide-react";
-
 import { useAuth } from "@/features/auth/auth-context";
-
 import { useNavigationUI } from "@/features/navigation/navigation-context";
+
 import { AppLink } from "./AppLink";
 import ErrorBanner from "./ErrorBanner";
+
+type ErrorLike = { status?: number; message?: string };
+
+function getErrorMessage(err: unknown): string {
+  if (typeof err === "object" && err !== null) {
+    const e = err as ErrorLike;
+    if (e.status === 401) return "Email o contraseña incorrectos.";
+    return e.message || "Ocurrió un error inesperado.";
+  }
+  return "Ocurrió un error inesperado.";
+}
 
 export default function LoginForm() {
   const router = useRouter();
   const { start } = useNavigationUI();
-  const { login } = useAuth();
+  const { login, isAuthLoading } = useAuth();
 
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/dashboard";
@@ -29,32 +38,24 @@ export default function LoginForm() {
   const [password, setPassword] = useState("");
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
-    setIsSubmitting(true);
 
     try {
-      await login({ email, password });
+      await login({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+
+      // ✅ primero inicia loading UI, luego navega
       start();
       router.replace(next);
     } catch (err: unknown) {
-      // Manejo básico sin any, sin romper eslint
-      const message =
-        typeof err === "object" && err !== null && "status" in err
-          ? (err as { status?: number; message?: string }).status === 401
-            ? "Email o contraseña incorrectos."
-            : (err as { message?: string }).message ||
-              "Ocurrió un error inesperado."
-          : "Ocurrió un error inesperado.";
-
-      setErrorMessage(message);
-    } finally {
-      setIsSubmitting(false);
+      setErrorMessage(getErrorMessage(err));
     }
   };
 
@@ -66,34 +67,11 @@ export default function LoginForm() {
         <div className="bg-card border border-border rounded-2xl p-8 shadow-2xl">
           <div className="flex items-center justify-center mb-8">
             <div className="flex items-center gap-3">
-              <div
-                className="
-    w-10 h-10
-    rounded-xl
-    flex items-center justify-center
-    bg-gradient-to-b
-    from-white
-    via-zinc-200
-    to-zinc-400
-    shadow-sm
-  "
-              >
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-b from-white via-zinc-200 to-zinc-400 shadow-sm">
                 <CheckCircle2 className="w-6 h-6 text-zinc-700" />
               </div>
 
-              <h1
-                className="
-    text-4xl md:text-4xl
-    font-extrabold
-    bg-gradient-to-b
-    from-white
-    via-gray-200
-    to-gray-600
-    bg-clip-text
-    text-transparent
-    tracking-tight
-  "
-              >
+              <h1 className="text-4xl md:text-4xl font-extrabold bg-gradient-to-b from-white via-gray-200 to-gray-600 bg-clip-text text-transparent tracking-tight">
                 StaiFocus
               </h1>
             </div>
@@ -108,7 +86,6 @@ export default function LoginForm() {
             </p>
           </div>
 
-          {/* ✅ AQUÍ VA TU ERRORBANNER */}
           <ErrorBanner
             title="No se pudo iniciar sesión"
             message={errorMessage}
@@ -130,6 +107,7 @@ export default function LoginForm() {
                   setErrorMessage(null);
                 }}
                 required
+                disabled={isAuthLoading}
                 className="h-11"
               />
             </div>
@@ -144,13 +122,14 @@ export default function LoginForm() {
                 </Label>
                 <button
                   type="button"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors flex justify-end "
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors flex justify-end"
                 >
-                  <Label className=" max-[333px]:text-xs">
+                  <Label className="max-[333px]:text-xs">
                     ¿Olvidaste tu contraseña?
                   </Label>
                 </button>
               </div>
+
               <div className="relative">
                 <Input
                   id="password"
@@ -162,17 +141,15 @@ export default function LoginForm() {
                     setErrorMessage(null);
                   }}
                   required
+                  disabled={isAuthLoading}
                   className="h-11 pr-10"
                 />
 
                 <button
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
-                  className="
-      absolute right-3 top-1/2 -translate-y-1/2
-      text-muted-foreground hover:text-foreground
-      transition-colors
-    "
+                  disabled={isAuthLoading}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (
@@ -188,9 +165,9 @@ export default function LoginForm() {
               type="submit"
               className="w-full h-11 font-medium"
               size="lg"
-              disabled={isSubmitting}
+              disabled={isAuthLoading}
             >
-              {isSubmitting ? "Iniciando..." : "Iniciar sesión"}
+              {isAuthLoading ? "Iniciando..." : "Iniciar sesión"}
             </Button>
           </form>
 
