@@ -1,6 +1,6 @@
-// server.ts
 import cors from "cors";
 import express from "express";
+import { errorHandler } from "./middleware/errorHandler";
 import { notFoundHandler } from "./middleware/notFound";
 import { rootRouter } from "./routes/root.routes";
 import { todosRouter } from "./routes/todos.routes";
@@ -14,5 +14,6 @@ app.use("/", rootRouter);
 app.use("/todos", todosRouter);
 
 app.use(notFoundHandler);
+app.use(errorHandler);
 
 export default app;

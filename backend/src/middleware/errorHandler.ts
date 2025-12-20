@@ -1,0 +1,13 @@
+import type { NextFunction, Request, Response } from "express";
+
+export function errorHandler(
+  err: any,
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const status = typeof err?.status === "number" ? err.status : 500;
+  const message = err?.message ?? "internal server error";
+
+  res.status(status).json({ message });
+}
