@@ -1,10 +1,10 @@
-import LoginForm from "@/components/LoginForm";
 import { RedirectIfAuth } from "@/components/auth/RedirectIfAuth";
+import SignupForm from "@/components/SignupForm";
 
-export default function HomePage() {
+export default function SignupPage() {
   return (
     <RedirectIfAuth>
-      <LoginForm />
+      <SignupForm />
     </RedirectIfAuth>
   );
 }
