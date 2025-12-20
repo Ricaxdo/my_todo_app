@@ -1,8 +1,9 @@
 import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env";
+import { unauthorized } from "../errors/AppError";
 
-type JwtPayload = {
+export type JwtPayload = {
   _id: string;
   email: string;
 };
@@ -13,8 +14,9 @@ export type AuthRequest = Request & {
 
 export function auth(req: AuthRequest, res: Response, next: NextFunction) {
   const header = req.header("Authorization");
+
   if (!header || !header.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "authorization required" });
+    throw unauthorized("authorization required");
   }
 
   const token = header.slice("Bearer ".length);
@@ -22,8 +24,8 @@ export function auth(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const payload = jwt.verify(token, env.jwtSecret) as JwtPayload;
     req.user = payload;
-    return next();
+    next();
   } catch {
-    return res.status(401).json({ message: "invalid or expired token" });
+    throw unauthorized("invalid or expired token");
   }
 }

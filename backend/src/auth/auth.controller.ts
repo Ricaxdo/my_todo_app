@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { unauthorized } from "../errors/AppError";
+import type { AuthRequest } from "../middleware/auth";
 import { UserModel } from "../users/user.model";
 import { signToken } from "./auth.utils";
 
@@ -56,6 +57,30 @@ export async function login(req: Request, res: Response, next: NextFunction) {
     });
 
     return res.json({ token });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+export async function me(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const userId = req.user?._id;
+
+    const user = await UserModel.findById(userId).select(
+      "name lastName phone email"
+    );
+
+    if (!user) throw unauthorized("authorization required");
+
+    return res.json({
+      user: {
+        _id: user._id.toString(),
+        name: user.name,
+        lastName: user.lastName,
+        phone: user.phone,
+        email: user.email,
+      },
+    });
   } catch (err) {
     return next(err);
   }
