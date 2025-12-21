@@ -1,9 +1,10 @@
 export default function TodoHeader() {
   return (
-    <header className="pt-12 space-y-4">
+    <header className="rounded-lg shadow-md">
       <div>
-        <h1 className="text-5xl md:text-7xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
-          StaiFocus on <br /> what matters.
+        <h1 className="text-5xl md:text-7xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60 pb-4">
+          Stay focused <br />
+          on what matters.
         </h1>
       </div>
       <p className="text-lg text-muted-foreground w-full font-light">

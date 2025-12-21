@@ -2,8 +2,10 @@
 import { apiFetch, type ApiError } from "@/lib/api/clients";
 
 export type Me = {
-  id: string;
+  _id: string;
   name: string;
+  lastName?: string;
+  phone?: string;
   email: string;
 };
 
@@ -34,7 +36,6 @@ function clearToken() {
   localStorage.removeItem("token");
 }
 
-// 👇 helper para SCRUM-49 (401 credenciales)
 export function isInvalidCredentials(err: unknown): boolean {
   return (
     typeof err === "object" &&
@@ -45,7 +46,11 @@ export function isInvalidCredentials(err: unknown): boolean {
 }
 
 export const authApi = {
-  me: () => apiFetch<Me>("/auth/me"),
+  // ✅ devuelve Me (no {user: Me})
+  me: async () => {
+    const res = await apiFetch<{ user: Me }>("/auth/me");
+    return res.user;
+  },
 
   signin: async (payload: SigninPayload) => {
     const res = await apiFetch<AuthResponse>("/auth/login", {
