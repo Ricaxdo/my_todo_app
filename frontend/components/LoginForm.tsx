@@ -15,35 +15,21 @@ import { useNavigationUI } from "@/features/navigation/navigation-context";
 import { AppLink } from "./AppLink";
 import ErrorBanner from "./ErrorBanner";
 
-type ErrorLike = { status?: number; message?: string };
-
-function getErrorMessage(err: unknown): string {
-  if (typeof err === "object" && err !== null) {
-    const e = err as ErrorLike;
-    if (e.status === 401) return "Email o contraseña incorrectos.";
-    return e.message || "Ocurrió un error inesperado.";
-  }
-  return "Ocurrió un error inesperado.";
-}
-
 export default function LoginForm() {
   const router = useRouter();
   const { start } = useNavigationUI();
-  const { login, isAuthLoading } = useAuth();
+  const { login, isAuthLoading, error, clearError } = useAuth();
 
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/dashboard";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage(null);
+    clearError();
 
     try {
       await login({
@@ -51,11 +37,11 @@ export default function LoginForm() {
         password,
       });
 
-      // ✅ primero inicia loading UI, luego navega
       start();
       router.replace(next);
-    } catch (err: unknown) {
-      setErrorMessage(getErrorMessage(err));
+    } catch {
+      // ✅ El error ya lo setea el AuthContext
+      // No necesitas setear nada aquí
     }
   };
 
@@ -88,8 +74,8 @@ export default function LoginForm() {
 
           <ErrorBanner
             title="No se pudo iniciar sesión"
-            message={errorMessage}
-            onClose={() => setErrorMessage(null)}
+            message={error}
+            onClose={clearError}
           />
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -104,7 +90,7 @@ export default function LoginForm() {
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
-                  setErrorMessage(null);
+                  clearError();
                 }}
                 required
                 disabled={isAuthLoading}
@@ -138,7 +124,7 @@ export default function LoginForm() {
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
-                    setErrorMessage(null);
+                    clearError();
                   }}
                   required
                   disabled={isAuthLoading}

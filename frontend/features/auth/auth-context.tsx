@@ -70,9 +70,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const me = await authApi.me();
       setUser(me);
-    } catch (err: unknown) {
+    } catch {
+      authApi.logout();
       setUser(null);
-      setError(getErrorMessage(err));
     }
   };
 
