@@ -3,16 +3,13 @@ import { TaskModel, type TaskDocument } from "./task.model";
 import type { Priority, Task } from "./task.types";
 
 function mapDocToTask(doc: TaskDocument & { _id: unknown }): Task {
-  // --- createdAt: garantizado por mongoose, pero hacemos guard por TS ---
   let createdAtIso: string;
 
   if (doc.createdAt instanceof Date) {
     createdAtIso = doc.createdAt.toISOString();
   } else if (doc.createdAt) {
-    // aquí TS ya sabe que no es undefined
     createdAtIso = new Date(doc.createdAt).toISOString();
   } else {
-    // fallback ultra-defensivo, no debería pasar en docs reales
     createdAtIso = new Date().toISOString();
   }
 
@@ -23,18 +20,13 @@ function mapDocToTask(doc: TaskDocument & { _id: unknown }): Task {
     priority: doc.priority,
     category: doc.category,
     createdAt: createdAtIso,
-    // NO ponemos updatedAt aquí de inicio
   };
 
-  // --- updatedAt: solo la agregamos si existe ---
   if (doc.updatedAt) {
-    let updatedAtIso: string;
-
-    if (doc.updatedAt instanceof Date) {
-      updatedAtIso = doc.updatedAt.toISOString();
-    } else {
-      updatedAtIso = new Date(doc.updatedAt).toISOString();
-    }
+    const updatedAtIso =
+      doc.updatedAt instanceof Date
+        ? doc.updatedAt.toISOString()
+        : new Date(doc.updatedAt).toISOString();
 
     result.updatedAt = updatedAtIso;
   }
@@ -42,20 +34,26 @@ function mapDocToTask(doc: TaskDocument & { _id: unknown }): Task {
   return result;
 }
 
-export async function getAllTasks(): Promise<Task[]> {
-  const docs = await TaskModel.find().sort({ createdAt: -1 }).exec();
+// ✅ Antes: getAllTasks()
+// ✅ Ahora: solo tasks del usuario logueado
+export async function getMyTasks(userId: string): Promise<Task[]> {
+  const docs = await TaskModel.find({ owner: userId })
+    .sort({ createdAt: -1 })
+    .exec();
+
   return docs.map(mapDocToTask);
 }
 
-export async function createTask(input: {
-  text: string;
-  priority?: Priority;
-  category?: string;
-}): Promise<Task> {
+// ✅ Crear task SIEMPRE con owner del backend
+export async function createTaskForUser(
+  userId: string,
+  input: { text: string; priority?: Priority; category?: string }
+): Promise<Task> {
   const doc = await TaskModel.create({
     text: input.text,
     priority: input.priority ?? "medium",
     category: input.category ?? "General",
+    owner: userId, // ✅ clave
   });
 
   return mapDocToTask(doc);
@@ -64,9 +62,11 @@ export async function createTask(input: {
 /**
  * Actualiza SOLO campos mutables.
  * (text, completed, priority, category)
+ * ✅ y SOLO si la task pertenece al user
  */
-export async function updateTask(
-  id: string,
+export async function updateTaskForUser(
+  userId: string,
+  taskId: string,
   data: Partial<Pick<Task, "text" | "completed" | "priority" | "category">>
 ): Promise<Task | null> {
   const updateData: Record<string, unknown> = {};
@@ -76,15 +76,25 @@ export async function updateTask(
   if (data.priority !== undefined) updateData.priority = data.priority;
   if (data.category !== undefined) updateData.category = data.category;
 
-  const doc = await TaskModel.findByIdAndUpdate(id, updateData, {
-    new: true,
-  }).exec();
+  const doc = await TaskModel.findOneAndUpdate(
+    { _id: taskId, owner: userId }, // ✅ filtro multi-user
+    updateData,
+    { new: true, runValidators: true }
+  ).exec();
 
   if (!doc) return null;
   return mapDocToTask(doc);
 }
 
-export async function deleteTask(id: string): Promise<boolean> {
-  const doc = await TaskModel.findByIdAndDelete(id).exec();
+// ✅ borrar SOLO si pertenece al user
+export async function deleteTaskForUser(
+  userId: string,
+  taskId: string
+): Promise<boolean> {
+  const doc = await TaskModel.findOneAndDelete({
+    _id: taskId,
+    owner: userId,
+  }).exec();
+
   return doc !== null;
 }
