@@ -1,22 +1,12 @@
 import type { NextFunction, Response } from "express";
 import { unauthorized } from "../errors/AppError";
 import type { AuthRequest } from "../middleware/auth";
-import { UserModel } from "../users/user.model";
 import {
   createTaskInWorkspace,
   deleteTaskInWorkspace,
   getWorkspaceTasks,
   updateTaskInWorkspace,
-} from "./task.store";
-
-// helper: obtener el personalWorkspaceId
-async function getPersonalWorkspaceId(userId: string): Promise<string> {
-  const u = await UserModel.findById(userId)
-    .select("personalWorkspaceId")
-    .exec();
-  if (!u?.personalWorkspaceId) throw unauthorized("authorization required");
-  return u.personalWorkspaceId.toString();
-}
+} from "../tasks/task.store";
 
 function parseValidDate(date?: string): Date | undefined {
   if (!date) return undefined;
@@ -29,29 +19,25 @@ function isValidIsoDateString(value: string) {
   return !Number.isNaN(d.getTime());
 }
 
-// ✅ COMPAT: /todos (usa personal workspace)
-export async function getTasks(
+export async function getWorkspaceTodos(
   req: AuthRequest,
   res: Response,
   next: NextFunction
 ) {
   try {
-    const userId = req.user?._id;
-    if (!userId) throw unauthorized("authorization required");
-
-    const personalWorkspaceId = await getPersonalWorkspaceId(userId);
-
+    const { workspaceId } = req.params as { workspaceId: string };
     const { date } = req.query as { date?: string };
+
     const selectedDate = parseValidDate(date);
 
-    const tasks = await getWorkspaceTasks(personalWorkspaceId, selectedDate);
+    const tasks = await getWorkspaceTasks(workspaceId, selectedDate);
     return res.json(tasks);
   } catch (err) {
     return next(err);
   }
 }
 
-export async function createTask(
+export async function createWorkspaceTodo(
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -60,7 +46,7 @@ export async function createTask(
     const userId = req.user?._id;
     if (!userId) throw unauthorized("authorization required");
 
-    const personalWorkspaceId = await getPersonalWorkspaceId(userId);
+    const { workspaceId } = req.params as { workspaceId: string };
 
     const { text, priority, category, dueDate } = req.body as {
       text?: string;
@@ -79,7 +65,7 @@ export async function createTask(
         .json({ message: "dueDate must be a valid ISO date" });
     }
 
-    const created = await createTaskInWorkspace(personalWorkspaceId, userId, {
+    const created = await createTaskInWorkspace(workspaceId, userId, {
       text: text.trim(),
       ...(priority !== undefined ? { priority } : {}),
       ...(category !== undefined ? { category } : {}),
@@ -92,18 +78,16 @@ export async function createTask(
   }
 }
 
-export async function updateTask(
+export async function updateWorkspaceTodo(
   req: AuthRequest,
   res: Response,
   next: NextFunction
 ) {
   try {
-    const userId = req.user?._id;
-    if (!userId) throw unauthorized("authorization required");
-
-    const personalWorkspaceId = await getPersonalWorkspaceId(userId);
-
-    const { id } = req.params;
+    const { workspaceId, id } = req.params as {
+      workspaceId: string;
+      id: string;
+    };
     if (!id) return res.status(400).json({ message: "task id is required" });
 
     const { text, completed, priority, category, dueDate } = req.body as {
@@ -130,7 +114,7 @@ export async function updateTask(
         .json({ message: "dueDate must be a valid ISO date" });
     }
 
-    const updated = await updateTaskInWorkspace(personalWorkspaceId, id, {
+    const updated = await updateTaskInWorkspace(workspaceId, id, {
       ...(text !== undefined ? { text } : {}),
       ...(completed !== undefined ? { completed } : {}),
       ...(priority !== undefined ? { priority } : {}),
@@ -145,21 +129,19 @@ export async function updateTask(
   }
 }
 
-export async function deleteTask(
+export async function deleteWorkspaceTodo(
   req: AuthRequest,
   res: Response,
   next: NextFunction
 ) {
   try {
-    const userId = req.user?._id;
-    if (!userId) throw unauthorized("authorization required");
-
-    const personalWorkspaceId = await getPersonalWorkspaceId(userId);
-
-    const { id } = req.params;
+    const { workspaceId, id } = req.params as {
+      workspaceId: string;
+      id: string;
+    };
     if (!id) return res.status(400).json({ message: "task id is required" });
 
-    const ok = await deleteTaskInWorkspace(personalWorkspaceId, id);
+    const ok = await deleteTaskInWorkspace(workspaceId, id);
     if (!ok) return res.status(404).json({ message: "task not found" });
 
     return res.json({ ok: true });

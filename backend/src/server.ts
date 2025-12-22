@@ -16,12 +16,11 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/", rootRouter);
-app.use("/todos", taskRoutes); // ✅ compat personal
-app.use("/workspaces", workspaceTodosRoutes); // ✅ nuevo shared
+app.use("/todos", taskRoutes); // compat personal
+app.use("/workspaces", workspaceTodosRoutes); // shared by workspace
 app.use("/auth", authRouter);
 
 app.use(notFoundHandler);
-
 app.use(errors());
 app.use(errorHandler);
 

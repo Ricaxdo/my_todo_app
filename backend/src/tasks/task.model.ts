@@ -38,8 +38,13 @@ const taskSchema = new Schema(
       required: true,
     },
 
-    // 🟡 TEMPORAL (para no romper datos viejos)
-    // luego lo quitamos cuando migres datos
+    // ✅ STEP 4: duración
+    dueDate: {
+      type: Date,
+      required: false,
+    },
+
+    // 🟡 TEMPORAL
     owner: {
       type: Schema.Types.ObjectId,
       ref: "User",
@@ -56,5 +61,4 @@ const taskSchema = new Schema(
 );
 
 export type TaskDocument = InferSchemaType<typeof taskSchema>;
-
 export const TaskModel = model<TaskDocument>("Task", taskSchema);
