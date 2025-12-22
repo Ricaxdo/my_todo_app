@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 export type WorkspaceMemberSchema = {
   workspaceId: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
+  role: "owner" | "admin" | "member";
   joinedAt: Date;
 };
 
@@ -20,6 +21,12 @@ const workspaceMemberSchema = new mongoose.Schema<WorkspaceMemberSchema>(
       required: true,
       index: true,
     },
+    role: {
+      type: String,
+      enum: ["owner", "admin", "member"],
+      default: "member",
+      index: true,
+    },
     joinedAt: {
       type: Date,
       default: Date.now,
@@ -28,7 +35,6 @@ const workspaceMemberSchema = new mongoose.Schema<WorkspaceMemberSchema>(
   { timestamps: false }
 );
 
-// ✅ evita duplicados
 workspaceMemberSchema.index({ workspaceId: 1, userId: 1 }, { unique: true });
 
 export const WorkspaceMemberModel = mongoose.model<WorkspaceMemberSchema>(

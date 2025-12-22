@@ -3,12 +3,11 @@ import mongoose from "mongoose";
 export type WorkspaceSchema = {
   name: string;
   owner: mongoose.Types.ObjectId;
-  inviteCode: string;
-  isPersonal: boolean; // ✅ nuevo
+  inviteCode: string | null; // 👈 cambia a nullable
+  isPersonal: boolean;
 };
 
 function generateInviteCode(length = 8) {
-  // simple, readable, sin caracteres raros
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let out = "";
   for (let i = 0; i < length; i++) {
@@ -33,24 +32,37 @@ const workspaceSchema = new mongoose.Schema<WorkspaceSchema>(
     },
     inviteCode: {
       type: String,
-      required: true,
+      default: null, // ✅ ya NO es required
       unique: true,
+      sparse: true, // ✅ muy importante
       index: true,
     },
     isPersonal: {
       type: Boolean,
-      default: false, // ✅ clave
+      default: false,
       index: true,
     },
   },
   { timestamps: true }
 );
 
-// ⚠️ sigue generando inviteCode, incluso para personal (no pasa nada)
+//
+// 👇 AQUÍ VA EL HOOK (JUSTO DESPUÉS DEL SCHEMA)
+//
 workspaceSchema.pre("validate", function () {
-  if (!this.inviteCode) this.inviteCode = generateInviteCode();
+  if (this.isPersonal) {
+    this.inviteCode = null; // ✅ personal nunca tiene código
+    return;
+  }
+
+  if (!this.inviteCode) {
+    this.inviteCode = generateInviteCode(); // ✅ solo shared
+  }
 });
 
+//
+// 👇 Y HASTA EL FINAL EXPORTAS EL MODELO
+//
 export const WorkspaceModel = mongoose.model<WorkspaceSchema>(
   "Workspace",
   workspaceSchema

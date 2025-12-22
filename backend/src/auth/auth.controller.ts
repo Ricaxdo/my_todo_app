@@ -38,6 +38,8 @@ export async function signup(req: Request, res: Response, next: NextFunction) {
     const personalWorkspace = await WorkspaceModel.create({
       name: "Personal",
       owner: user._id,
+      isPersonal: true,
+      inviteCode: null, // opcional, el hook ya lo forzará
     });
     createdWorkspaceId = personalWorkspace._id.toString();
 
@@ -45,6 +47,7 @@ export async function signup(req: Request, res: Response, next: NextFunction) {
     await WorkspaceMemberModel.create({
       workspaceId: personalWorkspace._id,
       userId: user._id,
+      role: "owner",
     });
 
     // 4) Link en user
