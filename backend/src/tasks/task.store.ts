@@ -3,15 +3,12 @@ import { TaskModel, type TaskDocument } from "./task.model";
 import type { Priority, Task } from "./task.types";
 
 function mapDocToTask(doc: TaskDocument & { _id: unknown }): Task {
-  let createdAtIso: string;
-
-  if (doc.createdAt instanceof Date) {
-    createdAtIso = doc.createdAt.toISOString();
-  } else if (doc.createdAt) {
-    createdAtIso = new Date(doc.createdAt).toISOString();
-  } else {
-    createdAtIso = new Date().toISOString();
-  }
+  const createdAtIso =
+    doc.createdAt instanceof Date
+      ? doc.createdAt.toISOString()
+      : doc.createdAt
+      ? new Date(doc.createdAt).toISOString()
+      : new Date().toISOString();
 
   const result: Task = {
     id: String(doc._id),
@@ -27,25 +24,23 @@ function mapDocToTask(doc: TaskDocument & { _id: unknown }): Task {
       doc.updatedAt instanceof Date
         ? doc.updatedAt.toISOString()
         : new Date(doc.updatedAt).toISOString();
-
     result.updatedAt = updatedAtIso;
   }
 
   return result;
 }
 
-// ✅ Antes: getAllTasks()
-// ✅ Ahora: solo tasks del usuario logueado
-export async function getMyTasks(userId: string): Promise<Task[]> {
-  const docs = await TaskModel.find({ owner: userId })
+// ✅ ahora: tasks del workspace
+export async function getWorkspaceTasks(workspaceId: string): Promise<Task[]> {
+  const docs = await TaskModel.find({ workspaceId })
     .sort({ createdAt: -1 })
     .exec();
 
   return docs.map(mapDocToTask);
 }
 
-// ✅ Crear task SIEMPRE con owner del backend
-export async function createTaskForUser(
+export async function createTaskInWorkspace(
+  workspaceId: string,
   userId: string,
   input: { text: string; priority?: Priority; category?: string }
 ): Promise<Task> {
@@ -53,19 +48,15 @@ export async function createTaskForUser(
     text: input.text,
     priority: input.priority ?? "medium",
     category: input.category ?? "General",
-    owner: userId, // ✅ clave
+    workspaceId,
+    createdBy: userId,
   });
 
   return mapDocToTask(doc);
 }
 
-/**
- * Actualiza SOLO campos mutables.
- * (text, completed, priority, category)
- * ✅ y SOLO si la task pertenece al user
- */
-export async function updateTaskForUser(
-  userId: string,
+export async function updateTaskInWorkspace(
+  workspaceId: string,
   taskId: string,
   data: Partial<Pick<Task, "text" | "completed" | "priority" | "category">>
 ): Promise<Task | null> {
@@ -77,23 +68,21 @@ export async function updateTaskForUser(
   if (data.category !== undefined) updateData.category = data.category;
 
   const doc = await TaskModel.findOneAndUpdate(
-    { _id: taskId, owner: userId }, // ✅ filtro multi-user
+    { _id: taskId, workspaceId }, // ✅ multi-user ahora por workspace
     updateData,
     { new: true, runValidators: true }
   ).exec();
 
-  if (!doc) return null;
-  return mapDocToTask(doc);
+  return doc ? mapDocToTask(doc) : null;
 }
 
-// ✅ borrar SOLO si pertenece al user
-export async function deleteTaskForUser(
-  userId: string,
+export async function deleteTaskInWorkspace(
+  workspaceId: string,
   taskId: string
 ): Promise<boolean> {
   const doc = await TaskModel.findOneAndDelete({
     _id: taskId,
-    owner: userId,
+    workspaceId,
   }).exec();
 
   return doc !== null;

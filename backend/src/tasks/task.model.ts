@@ -23,11 +23,27 @@ const taskSchema = new Schema(
       trim: true,
     },
 
-    // ✅ NUEVO: owner
-    owner: {
+    // ✅ NUEVO: workspace
+    workspaceId: {
+      type: Schema.Types.ObjectId,
+      ref: "Workspace",
+      required: true,
+      index: true,
+    },
+
+    // ✅ NUEVO: audit mínimo
+    createdBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
+    },
+
+    // 🟡 TEMPORAL (para no romper datos viejos)
+    // luego lo quitamos cuando migres datos
+    owner: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: false,
       index: true,
     },
   },
