@@ -1,5 +1,6 @@
 "use client";
 
+import { useTodoDashboard } from "@/app/hooks/useTodoDashboard";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -58,10 +59,11 @@ function scrollToId(id: string, duration = 900, extraOffset = 16) {
 export default function TodoNavBar() {
   const router = useRouter();
   const { logout, user, isLoading } = useAuth(); // ✅ user viene de /users/me
-  console.log("NAV user:", user);
+  const { logout: logoutTasks } = useTodoDashboard(); // ✅ para limpiar tasks al logout
 
   const handleLogout = () => {
-    logout(); // ✅ limpia token + user
+    logout(); // ✅ limpia token + use
+    logoutTasks(); // ✅ limpia tasks
     router.replace("/login"); // ✅
   };
 
