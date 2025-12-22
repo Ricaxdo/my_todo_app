@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import { useTodoDashboard } from "@/app/hooks/useTodoDashboard";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,7 +12,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAuth } from "@/features/auth/auth-context"; // ✅
+import { useAuth } from "@/features/auth/auth-context";
+import { WorkspaceModal } from "@/features/workspaces/WorkspaceModal"; // 👈 ajusta esta ruta
+
 import {
   BarChart3,
   Home,
@@ -28,7 +32,7 @@ function easeInOutCubic(t: number) {
 function getNavOffset(extra = 12) {
   const nav = document.getElementById("app-navbar");
   const h = nav?.offsetHeight ?? 0;
-  return h + extra; // extra = aire
+  return h + extra;
 }
 
 function scrollToId(id: string, duration = 900, extraOffset = 16) {
@@ -58,13 +62,16 @@ function scrollToId(id: string, duration = 900, extraOffset = 16) {
 
 export default function TodoNavBar() {
   const router = useRouter();
-  const { logout, user, isLoading } = useAuth(); // ✅ user viene de /users/me
-  const { logout: logoutTasks } = useTodoDashboard(); // ✅ para limpiar tasks al logout
+  const { logout, user, isLoading } = useAuth();
+  const { logout: logoutTasks } = useTodoDashboard();
+
+  // ✅ estado del modal
+  const [workspaceOpen, setWorkspaceOpen] = useState(false);
 
   const handleLogout = () => {
-    logout(); // ✅ limpia token + use
-    logoutTasks(); // ✅ limpia tasks
-    router.replace("/login"); // ✅
+    logout();
+    logoutTasks();
+    router.replace("/login");
   };
 
   const displayName =
@@ -72,6 +79,9 @@ export default function TodoNavBar() {
 
   return (
     <nav className="flex items-center justify-between gap-4">
+      {/* ✅ IMPORTANT: renderiza el modal aquí */}
+      <WorkspaceModal open={workspaceOpen} onOpenChange={setWorkspaceOpen} />
+
       {/* Logo */}
       <div className="flex items-center gap-2">
         <span className="font-semibold text-lg tracking-tight">StaiFocus</span>
@@ -117,7 +127,7 @@ export default function TodoNavBar() {
             variant="ghost"
             size="icon"
             className="rounded-full"
-            disabled={isLoading} // opcional
+            disabled={isLoading}
           >
             <User className="size-5" />
             <span className="sr-only">Menú de usuario</span>
@@ -125,8 +135,6 @@ export default function TodoNavBar() {
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="end" className="w-56">
-          {/* ✅ aquí ya no dice “Mi Cuenta” */}
-
           <DropdownMenuLabel className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold">
               {displayName.charAt(0).toUpperCase()}
@@ -142,15 +150,21 @@ export default function TodoNavBar() {
             </div>
           </DropdownMenuLabel>
 
-          {/* Visible only (sin lógica aún) */}
-          <DropdownMenuItem className="py-3" onClick={() => {}}>
+          {/* ✅ aquí abrimos el modal */}
+          <DropdownMenuItem
+            className="py-3"
+            onSelect={(e) => {
+              e.preventDefault(); // 👈 clave con Radix
+              setWorkspaceOpen(true);
+            }}
+          >
             <Settings className="mx-1 size-6" />
             <span className="pl-1">Workspace</span>
           </DropdownMenuItem>
 
           <DropdownMenuSeparator />
 
-          <DropdownMenuItem className="py-3" onClick={handleLogout}>
+          <DropdownMenuItem className="py-3" onSelect={handleLogout}>
             <LogOut className="mx-2 size-5" />
             <span>Cerrar sesión</span>
           </DropdownMenuItem>

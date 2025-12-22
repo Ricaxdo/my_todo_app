@@ -1,5 +1,6 @@
 "use client";
 
+import { useWorkspaces } from "@/features/workspaces/workspace-context";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import type { BackendTask, Priority, Task } from "../types/types";
@@ -60,11 +61,11 @@ export function useTodoDashboard() {
   // ================================
   // 1) Load tasks (reutilizable)
   // ================================
+  const { currentWorkspaceId } = useWorkspaces();
+
   const loadTasks = useCallback(async () => {
     const token = getToken();
-
-    // Si no hay token, no llames backend y limpia UI
-    if (!token) {
+    if (!token || !currentWorkspaceId) {
       setTasks([]);
       setError(null);
       return;
@@ -73,41 +74,39 @@ export function useTodoDashboard() {
     setIsLoading(true);
     setError(null);
 
+    const yyyyMmDd = selectedDate.toISOString().slice(0, 10);
+
     try {
-      const res = await fetch(`${API_URL}/todos`, {
-        headers: authHeaders(),
-      });
+      const res = await fetch(
+        `${API_URL}/workspaces/${currentWorkspaceId}/todos?date=${yyyyMmDd}`,
+        { headers: authHeaders() }
+      );
 
       const data = await res.json().catch(() => null);
 
       if (!res.ok) {
-        // Si token inválido/expirado: limpias sesión y evitas flash
         if (res.status === 401 || res.status === 403) {
           localStorage.removeItem("token");
           setTasks([]);
         }
-        const msg =
-          data?.message || data?.error || `GET /todos failed (${res.status})`;
-        setError(msg);
-        console.error("[frontend] GET /todos failed:", res.status, data);
+        setError(
+          data?.message || data?.error || `GET todos failed (${res.status})`
+        );
         return;
       }
 
       if (!Array.isArray(data)) {
-        const msg = "Expected array from /todos";
-        setError(msg);
-        console.error("[frontend] Expected array but got:", data);
+        setError("Expected array from todos endpoint");
         return;
       }
 
       setTasks(normalizeTasks(data as BackendTask[]));
-    } catch (err) {
+    } catch {
       setError("Network error loading tasks");
-      console.error("[frontend] Error al cargar tareas:", err);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [currentWorkspaceId, selectedDate]);
 
   // Carga inicial (y sirve para F5 porque lee token del storage)
   useEffect(() => {
