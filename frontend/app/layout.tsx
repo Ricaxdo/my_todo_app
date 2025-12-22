@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Modern ToDo",
+  title: "StaiFocus",
   description: "A minimalist and efficient todo list",
 };
 

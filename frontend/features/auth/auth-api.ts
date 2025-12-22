@@ -1,9 +1,11 @@
-// lib/api/auth.ts
-import { apiFetch } from "@/lib/api/clients";
+// features/auth/auth-api.ts
+import { apiFetch, type ApiError } from "@/lib/api/clients";
 
 export type Me = {
-  id: string;
+  _id: string;
   name: string;
+  lastName?: string;
+  phone?: string;
   email: string;
 };
 
@@ -14,8 +16,8 @@ export type SigninPayload = {
 
 export type SignupPayload = {
   name: string;
-  lastName?: string; // si lo vas a mandar también
-  phone?: string; // si lo vas a mandar también
+  lastName?: string;
+  phone?: string; // puedes mandar "333..." ya normalizado
   email: string;
   password: string;
 };
@@ -34,11 +36,25 @@ function clearToken() {
   localStorage.removeItem("token");
 }
 
+export function isApiError(err: unknown): err is ApiError {
+  return typeof err === "object" && err !== null && "status" in err;
+}
+
+export function isInvalidCredentials(err: unknown): boolean {
+  return isApiError(err) && err.status === 401;
+}
+
+export function getAuthErrorMessage(err: unknown): string {
+  if (isInvalidCredentials(err)) return "Email o contraseña incorrectos.";
+  if (isApiError(err)) return err.message || "Ocurrió un error.";
+  return "Ocurrió un error inesperado.";
+}
+
 export const authApi = {
-  me: () => apiFetch<Me>("/users/me"),
+  me: () => apiFetch<Me>("/auth/me"),
 
   signin: async (payload: SigninPayload) => {
-    const res = await apiFetch<AuthResponse>("/auth/signin", {
+    const res = await apiFetch<AuthResponse>("/auth/login", {
       method: "POST",
       body: JSON.stringify(payload),
     });
@@ -47,20 +63,11 @@ export const authApi = {
     return res;
   },
 
-  signup: async (payload: SignupPayload) => {
-    // Si tu backend devuelve token al registrarse:
-    // const res = await apiFetch<AuthResponse>("/auth/signup", {...})
-    // saveToken(res.token); return res;
-
-    // Si tu backend NO devuelve token (solo crea usuario):
-    return apiFetch<{ id: string; name: string; email: string }>(
-      "/auth/signup",
-      {
-        method: "POST",
-        body: JSON.stringify(payload),
-      }
-    );
-  },
+  signup: (payload: SignupPayload) =>
+    apiFetch<unknown>("/auth/signup", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 
   logout: () => {
     clearToken();

@@ -1,8 +1,8 @@
 "use client";
 
 import { useAuth } from "@/features/auth/auth-context";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo } from "react";
 
 function ProtectedShellSkeleton() {
   return (
@@ -32,12 +32,18 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const nextUrl = useMemo(() => {
+    const qs = searchParams.toString();
+    return qs ? `${pathname}?${qs}` : pathname;
+  }, [pathname, searchParams]);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+      router.replace(`/login?next=${encodeURIComponent(nextUrl)}`);
     }
-  }, [isLoading, isAuthenticated, router, pathname]);
+  }, [isLoading, isAuthenticated, router, nextUrl]);
 
   if (isLoading) return <ProtectedShellSkeleton />;
   if (!isAuthenticated) return null;

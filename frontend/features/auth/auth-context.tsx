@@ -1,8 +1,7 @@
 "use client";
 
 import type { Me } from "@/features/auth/auth-api";
-import { authApi } from "@/features/auth/auth-api"; // donde dejaste authApi
-import type { ApiError } from "@/lib/api/clients";
+import { authApi } from "@/features/auth/auth-api";
 import React, {
   createContext,
   useContext,
@@ -13,14 +12,30 @@ import React, {
 
 type LoginPayload = { email: string; password: string };
 
+type SignupPayload = {
+  name: string;
+  lastName?: string;
+  phone?: string;
+  email: string;
+  password: string;
+};
+
 type AuthContextValue = {
   user: Me | null;
   isAuthenticated: boolean;
+
+  // bootstrap (al cargar app / refresh session)
   isLoading: boolean;
+
+  // acciones de auth (login/signup/etc)
+  isAuthLoading: boolean;
+
   error: string | null;
 
   login: (payload: LoginPayload) => Promise<void>;
+  signup: (payload: SignupPayload) => Promise<void>;
   logout: () => void;
+
   refreshMe: () => Promise<void>;
   clearError: () => void;
 };
@@ -33,15 +48,20 @@ function getToken(): string | null {
 }
 
 function getErrorMessage(err: unknown): string {
-  if (typeof err === "object" && err !== null && "message" in err) {
-    return String((err as ApiError).message);
+  if (typeof err === "object" && err !== null) {
+    const e = err as { status?: number; message?: string };
+    if (e.status === 401) return "Email o contraseña incorrectos.";
+    return e.message || "Something went wrong";
   }
   return "Something went wrong";
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<Me | null>(null);
+
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
+
   const [error, setError] = useState<string | null>(null);
 
   const isAuthenticated = !!user;
@@ -51,7 +71,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshMe = async () => {
     clearError();
 
-    // Si no hay token, no pegues al backend
     const token = getToken();
     if (!token) {
       setUser(null);
@@ -61,36 +80,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const me = await authApi.me();
       setUser(me);
-    } catch (err: unknown) {
-      // si falla (401 u otro), apiFetch ya pudo limpiar token
+    } catch {
+      authApi.logout();
       setUser(null);
-      setError(getErrorMessage(err));
     }
   };
 
   const login = async (payload: LoginPayload) => {
-    setIsLoading(true);
+    setIsAuthLoading(true);
     clearError();
 
     try {
-      await authApi.signin(payload); // guarda token
-      await refreshMe(); // trae user
+      await authApi.signin(payload);
+      await refreshMe();
     } catch (err: unknown) {
       setUser(null);
       setError(getErrorMessage(err));
-      throw err; // opcional: para que el form también reaccione
+      throw err;
     } finally {
-      setIsLoading(false);
+      setIsAuthLoading(false);
+    }
+  };
+
+  const signup = async (payload: SignupPayload) => {
+    setIsAuthLoading(true);
+    clearError();
+
+    try {
+      await authApi.signup(payload);
+      // 👇 OJO: tu backend no devuelve token en signup, por eso NO hacemos refreshMe aquí
+      // si en el futuro devuelve token, aquí lo guardarías y luego refreshMe()
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
+      throw err;
+    } finally {
+      setIsAuthLoading(false);
     }
   };
 
   const logout = () => {
-    authApi.logout(); // limpia token
+    authApi.logout();
     setUser(null);
     clearError();
   };
 
-  // Al montar la app: intenta recuperar sesión
   useEffect(() => {
     (async () => {
       setIsLoading(true);
@@ -105,13 +138,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       isAuthenticated,
       isLoading,
+      isAuthLoading,
       error,
       login,
+      signup,
       logout,
       refreshMe,
       clearError,
     }),
-    [user, isAuthenticated, isLoading, error]
+    [user, isAuthenticated, isLoading, isAuthLoading, error]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
