@@ -20,12 +20,15 @@ const workspaceMemberSchema = new mongoose.Schema<WorkspaceMemberSchema>(
       required: true,
       index: true,
     },
-    joinedAt: { type: Date, default: Date.now },
+    joinedAt: {
+      type: Date,
+      default: Date.now,
+    },
   },
   { timestamps: false }
 );
 
-// evitar duplicados
+// ✅ evita duplicados
 workspaceMemberSchema.index({ workspaceId: 1, userId: 1 }, { unique: true });
 
 export const WorkspaceMemberModel = mongoose.model<WorkspaceMemberSchema>(

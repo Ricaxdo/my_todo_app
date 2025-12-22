@@ -1,4 +1,5 @@
 import type { NextFunction, Response } from "express";
+import mongoose from "mongoose";
 import { unauthorized } from "../errors/AppError";
 import type { AuthRequest } from "../middleware/auth";
 import { WorkspaceMemberModel } from "./workspaceMember.model";
@@ -15,6 +16,11 @@ export async function requireWorkspaceMember(
     const { workspaceId } = req.params as { workspaceId?: string };
     if (!workspaceId) {
       return res.status(400).json({ message: "workspaceId is required" });
+    }
+
+    // opcional pero recomendado
+    if (!mongoose.isValidObjectId(workspaceId)) {
+      return res.status(400).json({ message: "invalid workspaceId" });
     }
 
     const exists = await WorkspaceMemberModel.exists({

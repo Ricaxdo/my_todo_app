@@ -4,6 +4,7 @@ export type WorkspaceSchema = {
   name: string;
   owner: mongoose.Types.ObjectId;
   inviteCode: string;
+  isPersonal: boolean; // ✅ nuevo
 };
 
 function generateInviteCode(length = 8) {
@@ -30,11 +31,22 @@ const workspaceSchema = new mongoose.Schema<WorkspaceSchema>(
       ref: "User",
       required: true,
     },
-    inviteCode: { type: String, required: true, unique: true, index: true },
+    inviteCode: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+    },
+    isPersonal: {
+      type: Boolean,
+      default: false, // ✅ clave
+      index: true,
+    },
   },
   { timestamps: true }
 );
 
+// ⚠️ sigue generando inviteCode, incluso para personal (no pasa nada)
 workspaceSchema.pre("validate", function () {
   if (!this.inviteCode) this.inviteCode = generateInviteCode();
 });
