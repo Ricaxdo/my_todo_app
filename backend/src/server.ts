@@ -7,7 +7,7 @@ import { notFoundHandler } from "./middleware/notFound";
 
 import { authRouter } from "./auth/auth.routes";
 import { rootRouter } from "./routes/root.routes";
-import { todosRouter } from "./routes/todos.routes";
+import { todosRouter } from "./routes/todo.routes";
 
 const app = express();
 

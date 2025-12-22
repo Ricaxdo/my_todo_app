@@ -6,15 +6,21 @@ import type { BackendTask, Priority, Task } from "../types/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
+function getToken() {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("token");
+}
+
+function authHeaders(): HeadersInit {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 type Filter = "all" | "active" | "completed";
 
-// Helper para comparar fechas (solo día, mes, año)
-function isSameDay(a: Date, b: Date) {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
+// Helper: comparar por día LOCAL (evita broncas UTC vs CDMX)
+function isSameDayLocal(a: Date, b: Date) {
+  return a.toDateString() === b.toDateString();
 }
 
 export function useTodoDashboard() {
@@ -22,20 +28,40 @@ export function useTodoDashboard() {
   const [newTask, setNewTask] = useState("");
   const [activeFilter, setActiveFilter] = useState<Filter>("all");
   const [priority, setPriority] = useState<Priority>("low");
-
-  // 👇 NUEVO: fecha seleccionada
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
   // ================================
   // 1) Cargar tareas desde backend
   // ================================
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const res = await fetch(`${API_URL}/todos`);
-        const data: BackendTask[] = await res.json();
+        const token = getToken();
+        console.log("[frontend] token?", token ? "✅ yes" : "❌ no");
 
-        const normalized: Task[] = data.map((t) => ({
+        const res = await fetch(`${API_URL}/todos`, {
+          headers: authHeaders(),
+        });
+
+        const data = await res.json().catch(() => null);
+        console.log("[frontend] /todos response:", data);
+
+        // ✅ si backend falla, aquí ves el error real (y no truena el .map)
+        if (!res.ok) {
+          console.error("[frontend] GET /todos failed:", res.status, data);
+          return;
+        }
+
+        // ✅ aseguramos array
+        if (!Array.isArray(data)) {
+          console.error("[frontend] Expected array but got:", data);
+          return;
+        }
+
+        const normalized: Task[] = (data as BackendTask[]).map((t) => ({
           ...t,
           createdAt: new Date(t.createdAt),
           updatedAt: t.updatedAt ? new Date(t.updatedAt) : undefined,
@@ -60,20 +86,25 @@ export function useTodoDashboard() {
     try {
       const res = await fetch(`${API_URL}/todos`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders(),
+        },
         body: JSON.stringify({
           text: newTask,
-          priority, // 👈 usamos la prioridad seleccionada
+          priority,
           category: "General",
         }),
       });
 
+      const data = await res.json().catch(() => null);
+
       if (!res.ok) {
-        console.error("[frontend] Error al crear tarea");
+        console.error("[frontend] POST /todos failed:", res.status, data);
         return;
       }
 
-      const created: BackendTask = await res.json();
+      const created = data as BackendTask;
 
       const task: Task = {
         ...created,
@@ -83,7 +114,7 @@ export function useTodoDashboard() {
 
       setTasks((prev) => [task, ...prev]);
       setNewTask("");
-      setPriority("low"); // 👈 reseteamos a valor por defecto si quieres
+      setPriority("low");
     } catch (err) {
       console.error("[frontend] Error en handleAddTask:", err);
     }
@@ -98,17 +129,24 @@ export function useTodoDashboard() {
 
     const updatedCompleted = !target.completed;
 
-    // Optimistic UI
     setTasks((prev) =>
       prev.map((t) => (t.id === id ? { ...t, completed: updatedCompleted } : t))
     );
 
     try {
-      await fetch(`${API_URL}/todos/${id}`, {
+      const res = await fetch(`${API_URL}/todos/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders(),
+        },
         body: JSON.stringify({ completed: updatedCompleted }),
       });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        console.error("[frontend] PUT /todos/:id failed:", res.status, data);
+      }
     } catch (err) {
       console.error("[frontend] Error al actualizar tarea:", err);
     }
@@ -118,13 +156,18 @@ export function useTodoDashboard() {
   // 4) Eliminar tarea
   // ================================
   const deleteTask = async (id: string) => {
-    // Optimistic UI
     setTasks((prev) => prev.filter((t) => t.id !== id));
 
     try {
-      await fetch(`${API_URL}/todos/${id}`, {
+      const res = await fetch(`${API_URL}/todos/${id}`, {
         method: "DELETE",
+        headers: authHeaders(),
       });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        console.error("[frontend] DELETE /todos/:id failed:", res.status, data);
+      }
     } catch (err) {
       console.error("[frontend] Error al borrar tarea:", err);
     }
@@ -134,7 +177,7 @@ export function useTodoDashboard() {
   // 5) Filtrar tareas POR FECHA
   // ================================
   const tasksForSelectedDate = tasks.filter((t) =>
-    isSameDay(t.createdAt, selectedDate)
+    isSameDayLocal(t.createdAt, selectedDate)
   );
 
   // ================================
@@ -157,27 +200,19 @@ export function useTodoDashboard() {
     return true;
   });
 
-  // ================================
-  // 8) Retorno público del hook
-  // ================================
   return {
-    // raw
     tasks,
     newTask,
     activeFilter,
     selectedDate,
     priority,
-    // setters
     setNewTask,
     setActiveFilter,
     setSelectedDate,
     setPriority,
-    // actions
     handleAddTask,
     toggleTask,
     deleteTask,
-
-    // derivados
     filteredTasks,
     completedCount,
     activeCount,
