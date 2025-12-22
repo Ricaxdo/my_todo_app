@@ -31,18 +31,13 @@ export default function LoginForm() {
     e.preventDefault();
     clearError();
 
-    try {
-      await login({
-        email: email.trim().toLowerCase(),
-        password,
-      });
+    await login({
+      email: email.trim().toLowerCase(),
+      password,
+    });
 
-      start();
-      router.replace(next);
-    } catch {
-      // ✅ El error ya lo setea el AuthContext
-      // No necesitas setear nada aquí
-    }
+    start();
+    router.replace(next);
   };
 
   return (

@@ -97,20 +97,18 @@ export default function SignupForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    clearError(); // ✅ limpia error global
+    clearError();
     if (!validateForm()) return;
 
-    try {
-      await signup({
-        name: name.trim(),
-        lastName: lastName.trim(),
-        phone: phone.replace(/\D/g, ""),
-        email: email.trim().toLowerCase(),
-        password,
-      });
+    await signup({
+      name: name.trim(),
+      lastName: lastName.trim(),
+      phone: phone.replace(/\D/g, ""),
+      email: email.trim().toLowerCase(),
+      password,
+    });
 
-      router.replace("/login");
-    } catch {}
+    router.replace("/login");
   };
 
   const inputBorderClass = (
