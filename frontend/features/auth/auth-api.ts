@@ -1,4 +1,4 @@
-// features/api/auth.ts
+// features/auth/auth-api.ts
 import { apiFetch, type ApiError } from "@/lib/api/clients";
 
 export type Me = {
@@ -17,7 +17,7 @@ export type SigninPayload = {
 export type SignupPayload = {
   name: string;
   lastName?: string;
-  phone?: string;
+  phone?: string; // puedes mandar "333..." ya normalizado
   email: string;
   password: string;
 };
@@ -36,21 +36,22 @@ function clearToken() {
   localStorage.removeItem("token");
 }
 
+export function isApiError(err: unknown): err is ApiError {
+  return typeof err === "object" && err !== null && "status" in err;
+}
+
 export function isInvalidCredentials(err: unknown): boolean {
-  return (
-    typeof err === "object" &&
-    err !== null &&
-    "status" in err &&
-    (err as ApiError).status === 401
-  );
+  return isApiError(err) && err.status === 401;
+}
+
+export function getAuthErrorMessage(err: unknown): string {
+  if (isInvalidCredentials(err)) return "Email o contraseña incorrectos.";
+  if (isApiError(err)) return err.message || "Ocurrió un error.";
+  return "Ocurrió un error inesperado.";
 }
 
 export const authApi = {
-  // ✅ devuelve Me (no {user: Me})
-  me: async () => {
-    const res = await apiFetch<{ user: Me }>("/auth/me");
-    return res.user;
-  },
+  me: () => apiFetch<Me>("/auth/me"),
 
   signin: async (payload: SigninPayload) => {
     const res = await apiFetch<AuthResponse>("/auth/login", {
@@ -62,15 +63,11 @@ export const authApi = {
     return res;
   },
 
-  signup: async (payload: SignupPayload) => {
-    return apiFetch<{ id: string; name: string; email: string }>(
-      "/auth/signup",
-      {
-        method: "POST",
-        body: JSON.stringify(payload),
-      }
-    );
-  },
+  signup: (payload: SignupPayload) =>
+    apiFetch<unknown>("/auth/signup", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 
   logout: () => {
     clearToken();

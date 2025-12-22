@@ -12,6 +12,14 @@ import React, {
 
 type LoginPayload = { email: string; password: string };
 
+type SignupPayload = {
+  name: string;
+  lastName?: string;
+  phone?: string;
+  email: string;
+  password: string;
+};
+
 type AuthContextValue = {
   user: Me | null;
   isAuthenticated: boolean;
@@ -25,7 +33,9 @@ type AuthContextValue = {
   error: string | null;
 
   login: (payload: LoginPayload) => Promise<void>;
+  signup: (payload: SignupPayload) => Promise<void>;
   logout: () => void;
+
   refreshMe: () => Promise<void>;
   clearError: () => void;
 };
@@ -92,6 +102,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signup = async (payload: SignupPayload) => {
+    setIsAuthLoading(true);
+    clearError();
+
+    try {
+      await authApi.signup(payload);
+      // 👇 OJO: tu backend no devuelve token en signup, por eso NO hacemos refreshMe aquí
+      // si en el futuro devuelve token, aquí lo guardarías y luego refreshMe()
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
+      throw err;
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
   const logout = () => {
     authApi.logout();
     setUser(null);
@@ -115,6 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthLoading,
       error,
       login,
+      signup,
       logout,
       refreshMe,
       clearError,

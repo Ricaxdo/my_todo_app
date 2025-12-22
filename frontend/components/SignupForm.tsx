@@ -9,12 +9,12 @@ import {
   PopoverAnchor,
   PopoverContent,
 } from "@/components/ui/popover";
-import { authApi } from "@/features/auth/auth-api";
-import { getErrorMessage } from "@/lib/api/getErrorMessage";
+import { useAuth } from "@/features/auth/auth-context";
 import { CheckCircle2, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useRef, useState } from "react";
+import ErrorBanner from "./ErrorBanner";
 
 export default function SignupForm() {
   const router = useRouter();
@@ -28,6 +28,7 @@ export default function SignupForm() {
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const { signup, isAuthLoading, error, clearError } = useAuth();
 
   type FieldKey =
     | "name"
@@ -60,10 +61,12 @@ export default function SignupForm() {
     const newErrors: Record<string, string> = {};
 
     const cleanName = name.trim();
+    const cleanLastName = lastName.trim();
     const cleanEmail = email.trim().toLowerCase();
     const cleanPhone = phone.replace(/\D/g, ""); // por si acaso
 
     if (!cleanName) newErrors.name = "Solo letras";
+    if (!cleanLastName) newErrors.lastName = "Solo letras";
 
     if (!cleanEmail) {
       newErrors.email = "Email is required";
@@ -94,17 +97,20 @@ export default function SignupForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    clearError(); // ✅ limpia error global
     if (!validateForm()) return;
 
     try {
-      await authApi.signup({ name, lastName, phone, email, password });
+      await signup({
+        name: name.trim(),
+        lastName: lastName.trim(),
+        phone: phone.replace(/\D/g, ""),
+        email: email.trim().toLowerCase(),
+        password,
+      });
+
       router.replace("/login");
-    } catch (err: unknown) {
-      setErrors((prev) => ({
-        ...prev,
-        form: getErrorMessage(err),
-      }));
-    }
+    } catch {}
   };
 
   const inputBorderClass = (
@@ -149,6 +155,8 @@ export default function SignupForm() {
   };
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    clearError();
+
     const value = e.target.value;
     setName(value);
     scheduleFeedback("name");
@@ -169,6 +177,8 @@ export default function SignupForm() {
   };
 
   const handleLastNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    clearError();
+
     const value = e.target.value;
     setLastName(value);
     scheduleFeedback("lastName");
@@ -203,18 +213,23 @@ export default function SignupForm() {
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    clearError();
+
     const formatted = formatPhone(e.target.value);
     setPhone(formatted);
     scheduleFeedback("phone", formatted);
   };
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    clearError();
     const value = e.target.value;
     setEmail(value);
     scheduleFeedback("email", value);
   };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    clearError();
+
     const value = e.target.value;
     setPassword(value);
     scheduleFeedback("password", value);
@@ -223,6 +238,8 @@ export default function SignupForm() {
   const handleConfirmPasswordChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
+    clearError();
+
     const value = e.target.value;
     setConfirmPassword(value);
     scheduleFeedback("confirmPassword", value);
@@ -341,7 +358,11 @@ export default function SignupForm() {
               Únete a Focus y comienza a gestionar tus tareas
             </p>
           </div>
-
+          <ErrorBanner
+            title="No se pudo crear la cuenta"
+            message={error}
+            onClose={clearError}
+          />
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-1 gap-4 min-[437px]:grid-cols-2">
@@ -360,6 +381,7 @@ export default function SignupForm() {
                   value={name}
                   onChange={handleNameChange}
                   required
+                  disabled={isAuthLoading}
                   placeholder="Juanito"
                   className={`h-11 ${inputBorderClass(
                     "name",
@@ -380,6 +402,7 @@ export default function SignupForm() {
                   type="text"
                   value={lastName}
                   onChange={handleLastNameChange}
+                  disabled={isAuthLoading}
                   required
                   placeholder="Peregrino"
                   className={`h-11 ${inputBorderClass(
@@ -400,6 +423,7 @@ export default function SignupForm() {
                 <Input
                   id="email"
                   type="email"
+                  disabled={isAuthLoading}
                   value={email}
                   onChange={handleEmailChange}
                   required
@@ -427,6 +451,7 @@ export default function SignupForm() {
                   type="tel"
                   value={phone}
                   onChange={handlePhoneChange}
+                  disabled={isAuthLoading}
                   required
                   placeholder="000-000-0000"
                   className={`h-11 ${inputBorderClass(
@@ -448,6 +473,7 @@ export default function SignupForm() {
                     <div className="relative">
                       <Input
                         id="password"
+                        disabled={isAuthLoading}
                         type={showPassword ? "text" : "password"}
                         placeholder="••••••••"
                         value={password}
@@ -470,6 +496,7 @@ export default function SignupForm() {
                         type="button"
                         data-pw-toggle="true"
                         onMouseDown={(e) => e.preventDefault()}
+                        disabled={isAuthLoading}
                         onClick={() => setShowPassword((prev) => !prev)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition"
                         aria-label={
@@ -563,6 +590,7 @@ export default function SignupForm() {
                   <Input
                     id="confirmPassword"
                     placeholder="••••••••"
+                    disabled={isAuthLoading}
                     type={showConfirmPassword ? "text" : "password"}
                     value={confirmPassword}
                     onChange={handleConfirmPasswordChange}
@@ -577,6 +605,7 @@ export default function SignupForm() {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword((prev) => !prev)}
+                    disabled={isAuthLoading}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition"
                     aria-label={
                       showConfirmPassword ? "Hide password" : "Show password"
@@ -595,7 +624,7 @@ export default function SignupForm() {
             <Button
               type="submit"
               size="lg"
-              disabled={!isFormValid}
+              disabled={!isFormValid || isAuthLoading}
               className="
     w-full h-11 font-medium
     transition-all duration-300
@@ -604,7 +633,7 @@ export default function SignupForm() {
     disabled:pointer-events-none
   "
             >
-              Crea tu cuenta
+              {isAuthLoading ? "Creando..." : "Crea tu cuenta"}
             </Button>
           </form>
 
