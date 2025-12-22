@@ -1,20 +1,34 @@
 "use client";
 
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { BackendTask, Priority, Task } from "../types/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
+function getToken() {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("token");
+}
+
+function authHeaders(): HeadersInit {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 type Filter = "all" | "active" | "completed";
 
-// Helper para comparar fechas (solo día, mes, año)
-function isSameDay(a: Date, b: Date) {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
+// Helper: comparar por día LOCAL (evita broncas UTC vs CDMX)
+function isSameDayLocal(a: Date, b: Date) {
+  return a.toDateString() === b.toDateString();
+}
+
+function normalizeTasks(data: BackendTask[]): Task[] {
+  return data.map((t) => ({
+    ...t,
+    createdAt: new Date(t.createdAt),
+    updatedAt: t.updatedAt ? new Date(t.updatedAt) : undefined,
+  }));
 }
 
 export function useTodoDashboard() {
@@ -23,32 +37,82 @@ export function useTodoDashboard() {
   const [activeFilter, setActiveFilter] = useState<Filter>("all");
   const [priority, setPriority] = useState<Priority>("low");
 
-  // 👇 NUEVO: fecha seleccionada
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
 
-  // ================================
-  // 1) Cargar tareas desde backend
-  // ================================
   useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        const res = await fetch(`${API_URL}/todos`);
-        const data: BackendTask[] = await res.json();
-
-        const normalized: Task[] = data.map((t) => ({
-          ...t,
-          createdAt: new Date(t.createdAt),
-          updatedAt: t.updatedAt ? new Date(t.updatedAt) : undefined,
-        }));
-
-        setTasks(normalized);
-      } catch (err) {
-        console.error("[frontend] Error al cargar tareas:", err);
-      }
+    const onStorage = () => {
+      const token = getToken();
+      if (!token) setTasks([]);
     };
 
-    fetchTasks();
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
+
+  // UX states
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // ================================
+  // 1) Load tasks (reutilizable)
+  // ================================
+  const loadTasks = useCallback(async () => {
+    const token = getToken();
+
+    // Si no hay token, no llames backend y limpia UI
+    if (!token) {
+      setTasks([]);
+      setError(null);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch(`${API_URL}/todos`, {
+        headers: authHeaders(),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        // Si token inválido/expirado: limpias sesión y evitas flash
+        if (res.status === 401 || res.status === 403) {
+          localStorage.removeItem("token");
+          setTasks([]);
+        }
+        const msg =
+          data?.message || data?.error || `GET /todos failed (${res.status})`;
+        setError(msg);
+        console.error("[frontend] GET /todos failed:", res.status, data);
+        return;
+      }
+
+      if (!Array.isArray(data)) {
+        const msg = "Expected array from /todos";
+        setError(msg);
+        console.error("[frontend] Expected array but got:", data);
+        return;
+      }
+
+      setTasks(normalizeTasks(data as BackendTask[]));
+    } catch (err) {
+      setError("Network error loading tasks");
+      console.error("[frontend] Error al cargar tareas:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Carga inicial (y sirve para F5 porque lee token del storage)
+  useEffect(() => {
+    loadTasks();
+  }, [loadTasks]);
 
   // ================================
   // 2) Crear nueva tarea
@@ -60,20 +124,25 @@ export function useTodoDashboard() {
     try {
       const res = await fetch(`${API_URL}/todos`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders(),
+        },
         body: JSON.stringify({
-          text: newTask,
-          priority, // 👈 usamos la prioridad seleccionada
+          text: newTask.trim(),
+          priority,
           category: "General",
         }),
       });
 
+      const data = await res.json().catch(() => null);
+
       if (!res.ok) {
-        console.error("[frontend] Error al crear tarea");
+        console.error("[frontend] POST /todos failed:", res.status, data);
         return;
       }
 
-      const created: BackendTask = await res.json();
+      const created = data as BackendTask;
 
       const task: Task = {
         ...created,
@@ -83,62 +152,92 @@ export function useTodoDashboard() {
 
       setTasks((prev) => [task, ...prev]);
       setNewTask("");
-      setPriority("low"); // 👈 reseteamos a valor por defecto si quieres
+      setPriority("low");
     } catch (err) {
       console.error("[frontend] Error en handleAddTask:", err);
     }
   };
 
   // ================================
-  // 3) Toggle de completado
+  // 3) Toggle de completado (con rollback)
   // ================================
   const toggleTask = async (id: string) => {
+    const prev = tasks;
     const target = tasks.find((t) => t.id === id);
     if (!target) return;
 
     const updatedCompleted = !target.completed;
 
-    // Optimistic UI
-    setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, completed: updatedCompleted } : t))
+    // optimistic
+    setTasks((curr) =>
+      curr.map((t) => (t.id === id ? { ...t, completed: updatedCompleted } : t))
     );
 
     try {
-      await fetch(`${API_URL}/todos/${id}`, {
+      const res = await fetch(`${API_URL}/todos/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders(),
+        },
         body: JSON.stringify({ completed: updatedCompleted }),
       });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        console.error("[frontend] PUT /todos/:id failed:", res.status, data);
+        // rollback
+        setTasks(prev);
+      }
     } catch (err) {
       console.error("[frontend] Error al actualizar tarea:", err);
+      setTasks(prev);
     }
   };
 
   // ================================
-  // 4) Eliminar tarea
+  // 4) Eliminar tarea (con rollback)
   // ================================
   const deleteTask = async (id: string) => {
-    // Optimistic UI
-    setTasks((prev) => prev.filter((t) => t.id !== id));
+    const prev = tasks;
+    setTasks((curr) => curr.filter((t) => t.id !== id));
 
     try {
-      await fetch(`${API_URL}/todos/${id}`, {
+      const res = await fetch(`${API_URL}/todos/${id}`, {
         method: "DELETE",
+        headers: authHeaders(),
       });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        console.error("[frontend] DELETE /todos/:id failed:", res.status, data);
+        // rollback
+        setTasks(prev);
+      }
     } catch (err) {
       console.error("[frontend] Error al borrar tarea:", err);
+      setTasks(prev);
     }
   };
 
   // ================================
-  // 5) Filtrar tareas POR FECHA
+  // 5) Logout (limpia token + tasks)
+  // ================================
+  const logout = () => {
+    localStorage.removeItem("token");
+    setTasks([]);
+    setError(null);
+  };
+
+  // ================================
+  // 6) Filtrar tareas POR FECHA
   // ================================
   const tasksForSelectedDate = tasks.filter((t) =>
-    isSameDay(t.createdAt, selectedDate)
+    isSameDayLocal(t.createdAt, selectedDate)
   );
 
   // ================================
-  // 6) Métricas basadas en esa fecha
+  // 7) Métricas
   // ================================
   const completedCount = tasksForSelectedDate.filter((t) => t.completed).length;
   const activeCount = tasksForSelectedDate.filter((t) => !t.completed).length;
@@ -149,7 +248,7 @@ export function useTodoDashboard() {
       : 0;
 
   // ================================
-  // 7) Filtro (all, active, completed)
+  // 8) Filtro (all, active, completed)
   // ================================
   const filteredTasks = tasksForSelectedDate.filter((task) => {
     if (activeFilter === "active") return !task.completed;
@@ -157,9 +256,6 @@ export function useTodoDashboard() {
     return true;
   });
 
-  // ================================
-  // 8) Retorno público del hook
-  // ================================
   return {
     // raw
     tasks,
@@ -167,17 +263,25 @@ export function useTodoDashboard() {
     activeFilter,
     selectedDate,
     priority,
+
+    // UX
+    isLoading,
+    error,
+
     // setters
     setNewTask,
     setActiveFilter,
     setSelectedDate,
     setPriority,
+
     // actions
+    loadTasks, // 👈 para recargar manual (ej: después de login si lo ocupas)
+    logout, // 👈 para navbar logout
     handleAddTask,
     toggleTask,
     deleteTask,
 
-    // derivados
+    // derived
     filteredTasks,
     completedCount,
     activeCount,

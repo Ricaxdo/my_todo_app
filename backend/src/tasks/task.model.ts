@@ -1,7 +1,6 @@
 // src/tasks/task.model.ts
 import { Schema, model, type InferSchemaType } from "mongoose";
 
-// Definimos el schema de la colección "tasks"
 const taskSchema = new Schema(
   {
     text: {
@@ -23,9 +22,16 @@ const taskSchema = new Schema(
       default: "General",
       trim: true,
     },
+
+    // ✅ NUEVO: owner
+    owner: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
   },
   {
-    // Esto agrega createdAt y updatedAt automáticamente
     timestamps: {
       createdAt: "createdAt",
       updatedAt: "updatedAt",
@@ -33,8 +39,6 @@ const taskSchema = new Schema(
   }
 );
 
-// Tipo TypeScript inferido desde el schema
 export type TaskDocument = InferSchemaType<typeof taskSchema>;
 
-// Modelo de Mongoose para interactuar con la colección "tasks"
 export const TaskModel = model<TaskDocument>("Task", taskSchema);
