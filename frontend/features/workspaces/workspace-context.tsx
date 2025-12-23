@@ -27,19 +27,32 @@ export type Workspace = {
   owner: string;
   isPersonal: boolean;
   inviteCode: string | null; // personal => null
+  // opcional si luego guardas iconId:
+  // iconId?: string;
+};
+
+type CreateWorkspaceInput = {
+  name: string;
+  iconId?: string; // por ahora lo guardas FE, o luego lo mandas al BE
 };
 
 type WorkspaceCtx = {
   workspaces: Workspace[];
   currentWorkspaceId: string | null;
   currentWorkspace: Workspace | null;
-
   setCurrentWorkspaceId: (id: string) => void;
 
+  // ✅ mantener
   reloadWorkspaces: () => Promise<void>;
+  // ✅ agregar (para tu modal)
   refreshWorkspaces: () => Promise<void>;
 
+  // ✅ acciones
   joinWorkspaceByCode: (code: string) => Promise<void>;
+  createWorkspace: (input: CreateWorkspaceInput) => Promise<void>;
+
+  // ✅ límite
+  canCreateOrJoinExtra: boolean;
 
   isLoading: boolean;
   error: string | null;
@@ -63,10 +76,14 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(LS_KEY, id);
   }, []);
 
+  const canCreateOrJoinExtra = useMemo(() => {
+    const extraCount = workspaces.filter((w) => !w.isPersonal).length;
+    return extraCount < 1; // ✅ máximo 1 extra
+  }, [workspaces]);
+
   const reloadWorkspaces = useCallback(async () => {
     const token = getToken();
 
-    // ✅ si no hay token, limpia todo (incluyendo LS)
     if (!token) {
       setWorkspaces([]);
       setCurrentWorkspaceIdState(null);
@@ -124,7 +141,6 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       if (exists) {
         setCurrentWorkspaceIdState(saved);
       } else {
-        // default: personal si existe, si no el primero
         const personal = list.find((w) => w.isPersonal);
         const fallback = personal?.id ?? list[0]?.id ?? null;
         setCurrentWorkspaceIdState(fallback);
@@ -137,40 +153,98 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const joinWorkspaceByCode = useCallback(async (code: string) => {
-    const token = getToken();
-    if (!token) throw new Error("No auth token");
-
-    const clean = code.trim().toUpperCase();
-    if (!clean) throw new Error("Código requerido");
-
-    const res = await fetch(`${API_URL}/workspaces/join`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...authHeaders(),
-      },
-      body: JSON.stringify({ code: clean }),
-    });
-
-    const data = await res.json().catch(() => null);
-
-    if (!res.ok) {
-      const msg = data?.message || data?.error || `Join failed (${res.status})`;
-      throw new Error(msg);
-    }
-
-    // ✅ opcional: si backend responde workspace, lo seleccionamos
-    const joinedId = data?.workspace?.id as string | undefined;
-    if (joinedId) {
-      setCurrentWorkspaceIdState(joinedId);
-      localStorage.setItem(LS_KEY, joinedId);
-    }
-  }, []);
-
+  // ✅ alias para que tu modal pueda usar refreshWorkspaces()
   const refreshWorkspaces = useCallback(async () => {
     await reloadWorkspaces();
   }, [reloadWorkspaces]);
+
+  // ✅ join
+  const joinWorkspaceByCode = useCallback(
+    async (code: string) => {
+      const token = getToken();
+      if (!token) throw new Error("authorization required");
+
+      if (!canCreateOrJoinExtra) {
+        throw new Error(
+          "Solo puedes tener 2 workspaces (personal + 1 adicional)."
+        );
+      }
+
+      const res = await fetch(`${API_URL}/workspaces/join`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders(),
+        },
+        body: JSON.stringify({ code }),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(
+          data?.message || data?.error || `JOIN failed (${res.status})`
+        );
+      }
+
+      const joinedId = data?.workspace?.id as string | undefined;
+
+      await reloadWorkspaces();
+
+      if (joinedId) {
+        setCurrentWorkspaceId(joinedId);
+      }
+    },
+    [canCreateOrJoinExtra, reloadWorkspaces, setCurrentWorkspaceId]
+  );
+
+  // ✅ create (cuando ya tengas endpoint en BE, esto ya funciona)
+  const createWorkspace = useCallback(
+    async (input: CreateWorkspaceInput) => {
+      const token = getToken();
+      if (!token) throw new Error("authorization required");
+
+      if (!canCreateOrJoinExtra) {
+        throw new Error(
+          "Solo puedes tener 2 workspaces (personal + 1 adicional)."
+        );
+      }
+
+      const name = input.name.trim();
+      if (name.length < 2)
+        throw new Error("El nombre debe tener al menos 2 caracteres.");
+      if (name.length > 60)
+        throw new Error("El nombre no puede exceder 60 caracteres.");
+
+      // ✅ endpoint esperado: POST /workspaces { name }
+      // (si luego agregas iconId en BE, lo mandas también)
+      const res = await fetch(`${API_URL}/workspaces`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders(),
+        },
+        body: JSON.stringify({ name /*, iconId: input.iconId*/ }),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(
+          data?.message || data?.error || `CREATE failed (${res.status})`
+        );
+      }
+
+      const createdId = data?.workspace?.id as string | undefined;
+
+      await reloadWorkspaces();
+
+      if (createdId) {
+        setCurrentWorkspaceId(createdId);
+      }
+    },
+    [canCreateOrJoinExtra, reloadWorkspaces, setCurrentWorkspaceId]
+  );
 
   useEffect(() => {
     reloadWorkspaces();
@@ -186,9 +260,15 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     currentWorkspaceId,
     currentWorkspace,
     setCurrentWorkspaceId,
+
     reloadWorkspaces,
     refreshWorkspaces,
+
     joinWorkspaceByCode,
+    createWorkspace,
+
+    canCreateOrJoinExtra,
+
     isLoading,
     error,
   };
