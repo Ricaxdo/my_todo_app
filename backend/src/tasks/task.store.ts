@@ -142,3 +142,11 @@ export async function deleteTaskInWorkspace(
 
   return doc !== null;
 }
+
+export async function deleteAllTasksInWorkspace(
+  workspaceId: string
+): Promise<number> {
+  const result = await TaskModel.deleteMany({ workspaceId }).exec();
+  // mongoose devuelve deletedCount (puede ser undefined)
+  return result.deletedCount ?? 0;
+}
