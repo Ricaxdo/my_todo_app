@@ -9,6 +9,8 @@ import React, {
   useState,
 } from "react";
 
+import { useAuth } from "@/features/auth/auth-context"; // ajusta path real
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 function getToken() {
@@ -84,6 +86,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const [currentWorkspaceId, setCurrentWorkspaceIdState] = useState<
     string | null
   >(null);
+
+  const { isAuthenticated } = useAuth();
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -174,6 +178,10 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const refreshWorkspaces = useCallback(async () => {
     await reloadWorkspaces();
   }, [reloadWorkspaces]);
+
+  useEffect(() => {
+    reloadWorkspaces();
+  }, [isAuthenticated, reloadWorkspaces]);
 
   // ✅ join
   const joinWorkspaceByCode = useCallback(
@@ -352,6 +360,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
           data?.message || data?.error || `REMOVE member failed (${res.status})`
         );
       }
+      await reloadWorkspaces();
     },
     []
   );
