@@ -22,9 +22,20 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CreateWorkspaceModal } from "./CreateWorkspaceModal";
 import { useWorkspaces } from "./workspace-context";
+
+type Role = "owner" | "admin" | "member";
+
+type Member = {
+  userId: string;
+  name: string;
+  lastName?: string;
+  role: Role;
+  joinedAt?: string | Date;
+  isYou: boolean;
+};
 
 export function WorkspaceModal({
   open,
@@ -41,20 +52,64 @@ export function WorkspaceModal({
     joinWorkspaceByCode,
     createWorkspace,
     refreshWorkspaces,
-    canCreateOrJoinExtra,
+
+    // ✅ nuevas acciones
+    getWorkspaceMembers,
+    leaveWorkspace,
+    deleteWorkspace,
+    removeWorkspaceMember,
   } = useWorkspaces();
 
   const [joinCode, setJoinCode] = useState("");
   const [joinMsg, setJoinMsg] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
   const [copied, setCopied] = useState(false);
-
   const [createOpen, setCreateOpen] = useState(false);
 
   const extraWorkspaces = workspaces.filter((w) => !w.isPersonal);
   const hasExtraWorkspace = extraWorkspaces.length > 0;
-
   const maxReached = workspaces.length >= 2; // personal + 1 extra
+
+  // ✅ members state
+  const [members, setMembers] = useState<Member[]>([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [membersError, setMembersError] = useState<string | null>(null);
+
+  const myRole = useMemo<Role | undefined>(() => {
+    const me = members.find((m) => m.isYou);
+    return me?.role;
+  }, [members]);
+
+  // ✅ cargar members cuando cambia workspace (si no es personal)
+  useEffect(() => {
+    const run = async () => {
+      if (!currentWorkspaceId) return;
+
+      if (currentWorkspace?.isPersonal) {
+        setMembers([]);
+        setMembersError(null);
+        setMembersLoading(false);
+        return;
+      }
+
+      setMembersLoading(true);
+      setMembersError(null);
+      try {
+        const list = (await getWorkspaceMembers(
+          currentWorkspaceId
+        )) as Member[];
+        setMembers(Array.isArray(list) ? list : []);
+      } catch (e: unknown) {
+        setMembersError(
+          e instanceof Error ? e.message : "No se pudo cargar miembros"
+        );
+      } finally {
+        setMembersLoading(false);
+      }
+    };
+
+    run();
+  }, [currentWorkspaceId, currentWorkspace?.isPersonal, getWorkspaceMembers]);
 
   if (!currentWorkspace) {
     return (
@@ -103,16 +158,50 @@ export function WorkspaceModal({
     }
   };
 
+  const canShowActions = !currentWorkspace.isPersonal;
+
+  const onLeave = async () => {
+    if (!currentWorkspaceId) return;
+    const ok = window.confirm("¿Seguro que quieres salir de este workspace?");
+    if (!ok) return;
+
+    try {
+      await leaveWorkspace(currentWorkspaceId);
+      await refreshWorkspaces();
+      setJoinMsg("✅ Saliste del workspace");
+    } catch (e: unknown) {
+      setJoinMsg(e instanceof Error ? e.message : "No se pudo salir");
+    }
+  };
+
+  const onDelete = async () => {
+    if (!currentWorkspaceId) return;
+    const ok = window.confirm(
+      "¿Eliminar este workspace? Se borrarán miembros y tareas."
+    );
+    if (!ok) return;
+
+    try {
+      await deleteWorkspace(currentWorkspaceId);
+      await refreshWorkspaces();
+      setJoinMsg("✅ Workspace eliminado");
+      onOpenChange(false);
+    } catch (e: unknown) {
+      setJoinMsg(e instanceof Error ? e.message : "No se pudo eliminar");
+    }
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-[600px] gap-6">
           <DialogHeader>
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Building2 className="h-5 w-5" />
+            <div className="flex items-start gap-3">
+              <div className="flex h-13 w-13 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Building2 className="h-6 w-6" />
               </div>
-              <div>
+
+              <div className="flex-1">
                 <DialogTitle className="flex items-center gap-2 text-xl">
                   {currentWorkspace.name}
                 </DialogTitle>
@@ -120,6 +209,25 @@ export function WorkspaceModal({
                   Gestiona tu workspace y colabora con tu equipo
                 </DialogDescription>
               </div>
+
+              {/* ✅ Acciones pro (solo shared) */}
+              {canShowActions && (
+                <div className="flex items-center gap-2 mr-5 mt-3">
+                  {/* si NO eres owner => puedes salir */}
+                  {myRole && myRole !== "owner" && (
+                    <Button variant="outline" size="sm" onClick={onLeave}>
+                      Salir del workspace
+                    </Button>
+                  )}
+
+                  {/* si eres owner => puedes eliminar */}
+                  {myRole === "owner" && (
+                    <Button variant="destructive" size="sm" onClick={onDelete}>
+                      Eliminar workspace
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           </DialogHeader>
 
@@ -128,7 +236,8 @@ export function WorkspaceModal({
               <Sparkles className="h-4 w-4 text-muted-foreground" />
               <p className="text-sm font-medium">Tus Workspaces</p>
             </div>
-            <div className="grid grid-cols-2 gap-2 ">
+
+            <div className="grid grid-cols-2 gap-2">
               {workspaces.map((w) => (
                 <Card
                   key={w.id}
@@ -138,7 +247,10 @@ export function WorkspaceModal({
                       ? "border-primary bg-primary/5"
                       : "border-border"
                   )}
-                  onClick={() => setCurrentWorkspaceId(w.id)}
+                  onClick={() => {
+                    setCurrentWorkspaceId(w.id);
+                    setJoinMsg(null);
+                  }}
                 >
                   <div className="flex items-center justify-center gap-3">
                     <div
@@ -167,6 +279,7 @@ export function WorkspaceModal({
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
+                      setCreateOpen(true);
                     }
                   }}
                   className={cn(
@@ -245,6 +358,7 @@ export function WorkspaceModal({
               </TabsTrigger>
             </TabsList>
 
+            {/* ✅ MEMBERS reales */}
             <TabsContent value="members" className="space-y-4 pt-4">
               {currentWorkspace.isPersonal ? (
                 <Card className="flex flex-col items-center justify-center gap-3 border-dashed p-8 text-center">
@@ -259,16 +373,79 @@ export function WorkspaceModal({
                   </div>
                 </Card>
               ) : (
-                <Card className="flex flex-col items-center justify-center gap-3 border-dashed p-8 text-center">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                    <Users className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="font-medium">Próximamente</p>
+                <Card className="p-4">
+                  {membersLoading ? (
                     <p className="text-sm text-muted-foreground">
-                      La lista de miembros estará disponible pronto
+                      Cargando miembros...
                     </p>
-                  </div>
+                  ) : membersError ? (
+                    <p className="text-sm text-destructive">{membersError}</p>
+                  ) : members.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      No hay miembros.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {members.map((m) => {
+                        const canRemove =
+                          myRole === "owner"
+                            ? m.role !== "owner" && !m.isYou
+                            : myRole === "admin"
+                            ? m.role === "member" && !m.isYou
+                            : false;
+
+                        return (
+                          <div
+                            key={m.userId}
+                            className="flex items-center justify-between rounded-md border p-3"
+                          >
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium">
+                                {m.name} {m.lastName ?? ""}{" "}
+                                {m.isYou ? "(tú)" : ""}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {m.role}
+                              </p>
+                            </div>
+
+                            {canRemove && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={async () => {
+                                  const ok = window.confirm(
+                                    `¿Remover a ${m.name} del workspace?`
+                                  );
+                                  if (!ok) return;
+
+                                  try {
+                                    setMembersError(null);
+                                    await removeWorkspaceMember(
+                                      currentWorkspace.id,
+                                      m.userId
+                                    );
+                                    const list = (await getWorkspaceMembers(
+                                      currentWorkspace.id
+                                    )) as Member[];
+                                    setMembers(list);
+                                  } catch (e: unknown) {
+                                    setMembersError(
+                                      e instanceof Error
+                                        ? e.message
+                                        : "No se pudo remover"
+                                    );
+                                  }
+                                }}
+                              >
+                                Remover
+                              </Button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </Card>
               )}
             </TabsContent>
@@ -357,14 +534,15 @@ export function WorkspaceModal({
           </Tabs>
         </DialogContent>
       </Dialog>
+
       <CreateWorkspaceModal
         open={createOpen}
         onOpenChange={setCreateOpen}
         maxReached={maxReached}
         onCreate={async ({ name, iconId }) => {
           try {
-            await createWorkspace({ name, iconId }); // ✅ AQUI
-            await refreshWorkspaces(); // ✅ AQUI (opcional si createWorkspace ya hace reload)
+            await createWorkspace({ name, iconId });
+            await refreshWorkspaces();
             setCreateOpen(false);
             setJoinMsg("✅ Workspace creado");
           } catch (e: unknown) {

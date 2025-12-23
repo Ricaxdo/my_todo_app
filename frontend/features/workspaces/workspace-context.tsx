@@ -31,6 +31,15 @@ export type Workspace = {
   // iconId?: string;
 };
 
+export type WorkspaceMember = {
+  userId: string;
+  name: string;
+  lastName?: string;
+  role: "owner" | "admin" | "member";
+  joinedAt: string | Date;
+  isYou: boolean;
+};
+
 type CreateWorkspaceInput = {
   name: string;
   iconId?: string; // por ahora lo guardas FE, o luego lo mandas al BE
@@ -56,6 +65,14 @@ type WorkspaceCtx = {
 
   isLoading: boolean;
   error: string | null;
+
+  getWorkspaceMembers: (workspaceId: string) => Promise<WorkspaceMember[]>;
+  leaveWorkspace: (workspaceId: string) => Promise<void>;
+  deleteWorkspace: (workspaceId: string) => Promise<void>;
+  removeWorkspaceMember: (
+    workspaceId: string,
+    memberUserId: string
+  ) => Promise<void>;
 };
 
 const Ctx = createContext<WorkspaceCtx | null>(null);
@@ -246,6 +263,99 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     [canCreateOrJoinExtra, reloadWorkspaces, setCurrentWorkspaceId]
   );
 
+  const getWorkspaceMembers = useCallback(async (workspaceId: string) => {
+    const token = getToken();
+    if (!token) throw new Error("authorization required");
+
+    const res = await fetch(`${API_URL}/workspaces/${workspaceId}/members`, {
+      headers: authHeaders(),
+    });
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      throw new Error(
+        data?.message || data?.error || `GET members failed (${res.status})`
+      );
+    }
+
+    const members = (data?.members ?? []) as WorkspaceMember[];
+    return members;
+  }, []);
+
+  const leaveWorkspace = useCallback(
+    async (workspaceId: string) => {
+      const token = getToken();
+      if (!token) throw new Error("authorization required");
+
+      const res = await fetch(`${API_URL}/workspaces/${workspaceId}/leave`, {
+        method: "POST",
+        headers: authHeaders(),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(
+          data?.message || data?.error || `LEAVE failed (${res.status})`
+        );
+      }
+
+      // refresca lista
+      await reloadWorkspaces();
+    },
+    [reloadWorkspaces]
+  );
+
+  const deleteWorkspace = useCallback(
+    async (workspaceId: string) => {
+      const token = getToken();
+      if (!token) throw new Error("authorization required");
+
+      const res = await fetch(`${API_URL}/workspaces/${workspaceId}`, {
+        method: "DELETE",
+        headers: authHeaders(),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(
+          data?.message ||
+            data?.error ||
+            `DELETE workspace failed (${res.status})`
+        );
+      }
+
+      await reloadWorkspaces();
+    },
+    [reloadWorkspaces]
+  );
+
+  const removeWorkspaceMember = useCallback(
+    async (workspaceId: string, memberUserId: string) => {
+      const token = getToken();
+      if (!token) throw new Error("authorization required");
+
+      const res = await fetch(
+        `${API_URL}/workspaces/${workspaceId}/members/${memberUserId}`,
+        {
+          method: "DELETE",
+          headers: authHeaders(),
+        }
+      );
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(
+          data?.message || data?.error || `REMOVE member failed (${res.status})`
+        );
+      }
+    },
+    []
+  );
+
   useEffect(() => {
     reloadWorkspaces();
   }, [reloadWorkspaces]);
@@ -268,6 +378,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     createWorkspace,
 
     canCreateOrJoinExtra,
+
+    getWorkspaceMembers,
+    leaveWorkspace,
+    deleteWorkspace,
+    removeWorkspaceMember,
 
     isLoading,
     error,
