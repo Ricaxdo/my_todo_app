@@ -34,3 +34,31 @@ export function generateInviteCode(length = 8) {
   }
   return out;
 }
+
+async function createWorkspaceWithRetry(input: {
+  name: string;
+  owner: mongoose.Types.ObjectId;
+}) {
+  const MAX_TRIES = 8;
+
+  for (let i = 0; i < MAX_TRIES; i++) {
+    try {
+      // tu schema genera inviteCode en pre("validate")
+      return await WorkspaceModel.create({
+        name: input.name,
+        owner: input.owner,
+        isPersonal: false,
+      });
+    } catch (err: any) {
+      // duplicate key (inviteCode)
+      if (err?.code === 11000 && err?.keyValue?.inviteCode) {
+        // reintenta (nuevo inviteCode se generará)
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  // si ya reintentamos muchas veces, algo raro pasa
+  throw new Error("could not generate unique invite code");
+}

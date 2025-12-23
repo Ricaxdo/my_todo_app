@@ -14,6 +14,34 @@ function cleanName(name: unknown): string | null {
   return n;
 }
 
+// ✅ retry helper (evita 409 por inviteCode duplicado)
+async function createWorkspaceWithRetry(input: {
+  name: string;
+  owner: mongoose.Types.ObjectId;
+}) {
+  const MAX_TRIES = 8;
+
+  for (let i = 0; i < MAX_TRIES; i++) {
+    try {
+      // tu schema genera inviteCode en pre("validate") para NO-personal
+      return await WorkspaceModel.create({
+        name: input.name,
+        owner: input.owner,
+        isPersonal: false,
+      });
+    } catch (err: any) {
+      // duplicate key error -> inviteCode collision
+      if (err?.code === 11000 && err?.keyValue?.inviteCode) {
+        continue; // reintentar (nuevo inviteCode se generará)
+      }
+      throw err;
+    }
+  }
+
+  // si reintentando no se pudo, algo raro pasa
+  throw new Error("could not generate unique invite code");
+}
+
 /* =========================
    POST /workspaces
 ========================= */
@@ -27,8 +55,6 @@ export async function createWorkspace(
     if (!userIdRaw) throw unauthorized("authorization required");
 
     const userId = new mongoose.Types.ObjectId(userIdRaw);
-
-    if (!userId) throw unauthorized("authorization required");
 
     // ✅ límite: personal + 1 extra
     const extraCount = await countExtraWorkspacesForUser(userId);
@@ -45,14 +71,9 @@ export async function createWorkspace(
       });
     }
 
-    const workspace = await WorkspaceModel.create({
-      name,
-      owner: userId,
-      isPersonal: false,
-      // inviteCode lo genera el pre("validate")
-    });
+    // ✅ aquí va el retry
+    const workspace = await createWorkspaceWithRetry({ name, owner: userId });
 
-    // ✅ owner membership con role owner
     await WorkspaceMemberModel.create({
       workspaceId: workspace._id,
       userId,

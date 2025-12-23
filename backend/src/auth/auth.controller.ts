@@ -35,12 +35,13 @@ export async function signup(req: Request, res: Response, next: NextFunction) {
     createdUserId = user._id.toString();
 
     // 2) Crear workspace personal
+    // 2) Crear workspace personal ✅ SIN inviteCode
     const personalWorkspace = await WorkspaceModel.create({
       name: "Personal",
       owner: user._id,
       isPersonal: true,
-      inviteCode: null, // opcional, el hook ya lo forzará
     });
+
     createdWorkspaceId = personalWorkspace._id.toString();
 
     // 3) Crear membership
@@ -64,6 +65,12 @@ export async function signup(req: Request, res: Response, next: NextFunction) {
       personalWorkspaceId: personalWorkspace._id.toString(),
     });
   } catch (err) {
+    console.log("[signup error]", {
+      code: (err as any)?.code,
+      keyPattern: (err as any)?.keyPattern,
+      keyValue: (err as any)?.keyValue,
+      message: (err as any)?.message,
+    });
     // 🔥 rollback best-effort para no dejar basura
     try {
       if (createdWorkspaceId) {

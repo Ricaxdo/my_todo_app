@@ -1,9 +1,9 @@
-import mongoose from "mongoose";
+import mongoose, { HydratedDocument } from "mongoose";
 
 export type WorkspaceSchema = {
   name: string;
   owner: mongoose.Types.ObjectId;
-  inviteCode: string | null; // 👈 cambia a nullable
+  inviteCode?: string; // ✅ opcional
   isPersonal: boolean;
 };
 
@@ -15,6 +15,8 @@ function generateInviteCode(length = 8) {
   }
   return out;
 }
+
+type WorkspaceDoc = HydratedDocument<WorkspaceSchema>;
 
 const workspaceSchema = new mongoose.Schema<WorkspaceSchema>(
   {
@@ -32,9 +34,9 @@ const workspaceSchema = new mongoose.Schema<WorkspaceSchema>(
     },
     inviteCode: {
       type: String,
-      default: null, // ✅ ya NO es required
+      default: undefined, // ✅ que NO exista por default
       unique: true,
-      sparse: true, // ✅ muy importante
+      sparse: true,
       index: true,
     },
     isPersonal: {
@@ -46,23 +48,17 @@ const workspaceSchema = new mongoose.Schema<WorkspaceSchema>(
   { timestamps: true }
 );
 
-//
-// 👇 AQUÍ VA EL HOOK (JUSTO DESPUÉS DEL SCHEMA)
-//
-workspaceSchema.pre("validate", function () {
+workspaceSchema.pre("validate", function (this: WorkspaceDoc) {
   if (this.isPersonal) {
-    this.inviteCode = null; // ✅ personal nunca tiene código
+    delete this.inviteCode; // ✅ elimina el campo (perfecto con exactOptionalPropertyTypes)
     return;
   }
 
   if (!this.inviteCode) {
-    this.inviteCode = generateInviteCode(); // ✅ solo shared
+    this.inviteCode = generateInviteCode();
   }
 });
 
-//
-// 👇 Y HASTA EL FINAL EXPORTAS EL MODELO
-//
 export const WorkspaceModel = mongoose.model<WorkspaceSchema>(
   "Workspace",
   workspaceSchema
