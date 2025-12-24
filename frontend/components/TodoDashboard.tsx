@@ -1,6 +1,7 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
+import { useMemo } from "react";
 import { useTodoDashboard } from "../app/hooks/useTodoDashboard";
 import AddTaskForm from "./AddTaskForm";
 import TaskList from "./TaskList";
@@ -35,6 +36,18 @@ export default function TodoDashboard() {
     isPersonalWorkspace,
     meId,
   } = useTodoDashboard();
+
+  const assigneeMembers = useMemo(
+    () =>
+      members.map((m) => ({
+        userId: m.id, // 👈 aquí asumimos que m.id ES el userId real
+        name: m.name,
+      })),
+    [members]
+  );
+
+  console.log("DASH members:", members);
+  console.log("DASH isPersonal:", isPersonalWorkspace, "meId:", meId);
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/20">
@@ -120,6 +133,9 @@ export default function TodoDashboard() {
                   tasks={filteredTasks}
                   toggleTask={toggleTask}
                   deleteTask={deleteTask}
+                  members={assigneeMembers}
+                  isPersonalWorkspace={isPersonalWorkspace}
+                  meId={meId}
                 />
               </main>
             </section>

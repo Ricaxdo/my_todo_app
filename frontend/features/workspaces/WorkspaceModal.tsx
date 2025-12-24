@@ -269,10 +269,10 @@ export function WorkspaceModal({
                   {myRole && myRole !== "owner" && (
                     <Button
                       variant="outline"
-                      size="sm"
+                      size="lg"
                       onClick={() => setLeaveOpen(true)}
                     >
-                      Salir del workspace
+                      Abandonar
                     </Button>
                   )}
 
@@ -601,21 +601,21 @@ export function WorkspaceModal({
         onOpenChange={setCreateOpen}
         maxReached={maxReached}
         onCreate={async ({ name, iconId }) => {
-          try {
-            await createWorkspace({ name, iconId });
-            await refreshWorkspaces();
-            setCreateOpen(false);
-            setJoinMsg("✅ Workspace creado");
-          } catch (e: unknown) {
-            setJoinMsg(e instanceof Error ? e.message : "No se pudo crear");
-          }
+          await createWorkspace({ name, iconId });
+          await refreshWorkspaces();
+          setJoinMsg("✅ Workspace creado");
+        }}
+        onJoin={async (code) => {
+          await joinWorkspaceByCode(code);
+          await refreshWorkspaces();
+          setJoinMsg("✅ Te uniste al workspace");
         }}
       />
 
       <ConfirmActionDialog
         open={leaveOpen}
         onOpenChange={setLeaveOpen}
-        title="Salir del workspace"
+        title="Abandonar"
         description="Perderás acceso a sus tareas, miembros y actividades."
         confirmText="Sí, salir"
         cancelText="Cancelar"

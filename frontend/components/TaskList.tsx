@@ -1,22 +1,44 @@
 import { LayoutGrid } from "lucide-react";
-import type { Task } from "../app/types/types"; // ajusta el path si hace falta
+import type { Task } from "../app/types/types";
 import TaskItem from "./TaskItem";
+
+type AssigneeMember = {
+  userId: string;
+  name: string;
+  lastName?: string;
+  isYou?: boolean;
+};
 
 type Props = {
   tasks: Task[];
-  toggleTask: (id: string) => void; // 🔁 string
-  deleteTask: (id: string) => void; // 🔁 string
+  toggleTask: (id: string) => void;
+  deleteTask: (id: string) => void;
+
+  members?: AssigneeMember[];
+  isPersonalWorkspace?: boolean;
+  meId?: string | null;
 };
 
-export default function TaskList({ tasks, toggleTask, deleteTask }: Props) {
+export default function TaskList({
+  tasks,
+  toggleTask,
+  deleteTask,
+  members,
+  isPersonalWorkspace,
+  meId,
+}: Props) {
   return (
     <div className="space-y-2 min-h-[300px]">
       {tasks.map((task) => (
         <TaskItem
           key={task.id}
           task={task}
-          onToggle={() => toggleTask(task.id)} // ok: task.id es string
-          onDelete={() => deleteTask(task.id)} // ok: task.id es string
+          onToggle={() => toggleTask(task.id)}
+          onDelete={() => deleteTask(task.id)}
+          // ✅ PASARLOS
+          members={members}
+          isPersonalWorkspace={isPersonalWorkspace}
+          meId={meId}
         />
       ))}
 

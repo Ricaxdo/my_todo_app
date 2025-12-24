@@ -1,41 +1,71 @@
 // src/features/todo/components/TaskItem.tsx
 "use client";
 
-import type { WorkspaceMember } from "@/features/workspaces/workspace-context";
 import { Check, Trash2, Users } from "lucide-react";
 import type React from "react";
 import type { Task } from "../app/types/types";
+
+type AssigneeMember = {
+  userId: string;
+  name: string;
+  lastName?: string;
+  isYou?: boolean;
+};
 
 type Props = {
   task: Task;
   onToggle: () => void;
   onDelete: () => void;
 
-  // ✅ ahora opcional para evitar crash mientras carga
-  members?: WorkspaceMember[];
-
+  members?: AssigneeMember[];
   isPersonalWorkspace?: boolean;
   meId?: string | null;
 };
 
+// ✅ Title Case simple (soporta acentos)
+function toTitleCase(input: string) {
+  return input
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .split(" ")
+    .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : ""))
+    .join(" ");
+}
+
 function getAssigneeLabels(
   assigneeIds: string[] | undefined,
-  members: WorkspaceMember[] = [],
+  members: AssigneeMember[] = [],
   isPersonalWorkspace?: boolean,
   meId?: string | null
 ): string[] {
   const ids = Array.isArray(assigneeIds) ? assigneeIds : [];
 
+  // ✅ Todos (comparando sets)
+  if (!isPersonalWorkspace) {
+    const allIds = new Set<string>(members.map((m) => m.userId));
+    if (meId) allIds.add(meId);
+
+    const isAll =
+      allIds.size > 0 && Array.from(allIds).every((id) => ids.includes(id));
+
+    if (isAll) return ["Todos"];
+  }
+
+  // ✅ Personal
   if (isPersonalWorkspace && meId && ids.includes(meId)) {
     return ["Tú"];
   }
 
+  // ✅ map ids -> labels usando members
   const labels = ids
     .map((id) => members.find((m) => m.userId === id))
-    .filter((m): m is WorkspaceMember => Boolean(m))
-    .map((m) =>
-      m.isYou ? "Tú" : `${m.name}${m.lastName ? ` ${m.lastName}` : ""}`.trim()
-    );
+    .filter((m): m is AssigneeMember => Boolean(m))
+    .map((m) => {
+      if (m.isYou) return "Tú";
+      const full = `${m.name}${m.lastName ? ` ${m.lastName}` : ""}`.trim();
+      return full ? toTitleCase(full) : "Asignado";
+    });
 
   if (labels.length === 0 && ids.length > 0) return ["Asignado"];
   return labels;
@@ -79,6 +109,9 @@ export default function TaskItem({
 
   const createdAtDate =
     task.createdAt instanceof Date ? task.createdAt : new Date(task.createdAt);
+
+  console.log("task.assignees:", task.assignees);
+  console.log("members passed:", members);
 
   return (
     <div

@@ -41,6 +41,17 @@ function startOfDay(d: Date) {
   return x;
 }
 
+// ✅ Title Case simple (soporta acentos)
+function toTitleCase(input: string) {
+  return input
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .split(" ")
+    .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : ""))
+    .join(" ");
+}
+
 export default function AddTaskForm({
   newTask,
   setNewTask,
@@ -109,6 +120,36 @@ export default function AddTaskForm({
     return format(customDate, "d MMM", { locale: es });
   };
 
+  // ============================
+  // ✅ TODOS (assignees) - robusto
+  // ============================
+  const allMemberIds = useMemo(() => {
+    // members trae ids de usuarios (tu m.id debe ser userId)
+    const ids = members.map((m) => m.id);
+
+    // por si members no incluye al creador, lo agregamos
+    const set = new Set<string>([...ids, meId]);
+
+    return Array.from(set);
+  }, [members, meId]);
+
+  const isAllSelected = useMemo(() => {
+    if (isPersonalWorkspace) return false;
+    if (allMemberIds.length === 0) return false;
+
+    // ✅ all selected si están TODOS los ids incluidos
+    return allMemberIds.every((id) => assignees.includes(id));
+  }, [isPersonalWorkspace, allMemberIds, assignees]);
+
+  const toggleAll = () => {
+    if (isPersonalWorkspace) return;
+
+    setAssignees(() => {
+      // si ya están todos => vuelve a solo yo
+      return isAllSelected ? [meId] : allMemberIds;
+    });
+  };
+
   const toggleAssignee = (id: string) => {
     if (isPersonalWorkspace) return;
 
@@ -124,12 +165,15 @@ export default function AddTaskForm({
   const assigneeLabel = useMemo(() => {
     if (isPersonalWorkspace) return "Asignado a mí";
     if (assignees.length === 0) return "Asignar";
+    if (isAllSelected) return "Todos";
+
     if (assignees.length === 1) {
       const m = members.find((x) => x.id === assignees[0]);
-      return m ? m.name : "1 asignado";
+      return m ? toTitleCase(m.name) : "1 asignado";
     }
+
     return `${assignees.length} asignados`;
-  }, [isPersonalWorkspace, assignees, members]);
+  }, [isPersonalWorkspace, assignees, members, isAllSelected]);
 
   return (
     <form onSubmit={onSubmit} className="relative group">
@@ -243,7 +287,6 @@ export default function AddTaskForm({
                   <div className="p-3">
                     <Calendar
                       mode="single"
-                      // 👇 lo que se ve seleccionado en el calendario
                       selected={customDate}
                       onSelect={handleCustomDateSelect}
                       disabled={(date: Date) =>
@@ -281,6 +324,24 @@ export default function AddTaskForm({
                   Asignar a:
                 </div>
 
+                {/* ✅ TODOS */}
+                <button
+                  type="button"
+                  onClick={toggleAll}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors ${
+                    isAllSelected
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-secondary"
+                  }`}
+                >
+                  <span>Todos</span>
+                  {isAllSelected && (
+                    <span className="text-xs font-semibold">✓</span>
+                  )}
+                </button>
+
+                <div className="my-1 h-px bg-border" />
+
                 <div className="max-h-56 overflow-auto">
                   {members.map((m) => {
                     const checked = assignees.includes(m.id);
@@ -289,13 +350,13 @@ export default function AddTaskForm({
                         key={m.id}
                         type="button"
                         onClick={() => toggleAssignee(m.id)}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors ${
+                        className={`w-full flex items-center justify-between my-1 px-3 py-2 rounded-md text-sm transition-colors ${
                           checked
                             ? "bg-primary text-primary-foreground"
                             : "hover:bg-secondary"
                         }`}
                       >
-                        <span className="truncate">{m.name}</span>
+                        <span className="truncate">{toTitleCase(m.name)}</span>
                         {checked && (
                           <span className="text-xs font-semibold">✓</span>
                         )}
