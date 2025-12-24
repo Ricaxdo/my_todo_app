@@ -1,29 +1,23 @@
 // src/tasks/task.model.ts
 import { Schema, model, type InferSchemaType } from "mongoose";
 
+function endOfTodayLocal() {
+  const d = new Date();
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
 const taskSchema = new Schema(
   {
-    text: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    completed: {
-      type: Boolean,
-      default: false,
-    },
+    text: { type: String, required: true, trim: true },
+    completed: { type: Boolean, default: false },
     priority: {
       type: String,
       enum: ["low", "medium", "high"],
       default: "medium",
     },
-    category: {
-      type: String,
-      default: "General",
-      trim: true,
-    },
+    category: { type: String, default: "General", trim: true },
 
-    // ✅ NUEVO: workspace
     workspaceId: {
       type: Schema.Types.ObjectId,
       ref: "Workspace",
@@ -31,17 +25,17 @@ const taskSchema = new Schema(
       index: true,
     },
 
-    // ✅ NUEVO: audit mínimo
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
 
-    // ✅ STEP 4: duración
+    // ✅ default al fin de HOY (local del server)
     dueDate: {
       type: Date,
       required: false,
+      index: true,
     },
 
     // 🟡 TEMPORAL

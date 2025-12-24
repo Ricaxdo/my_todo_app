@@ -9,10 +9,13 @@ export async function apiFetch<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone; // 👈 clave
+
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
+      "X-Timezone": timezone, // 👈 se manda SIEMPRE
       ...(options.headers ?? {}),
     },
     credentials: "include",
