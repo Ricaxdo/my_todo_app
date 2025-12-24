@@ -1,5 +1,19 @@
 // src/components/todo/TodoStats.tsx
-import { Calendar, Clock, ListTodo } from "lucide-react";
+"use client";
+
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { Calendar as CalendarIcon, Clock, ListTodo } from "lucide-react";
+import * as React from "react";
+
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type Props = {
   activeCount: number;
@@ -8,12 +22,10 @@ type Props = {
   onChangeDate: (date: Date) => void;
 };
 
-// Helper para value del <input type="date">
-function toDateInputValue(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+function startOfDay(d: Date) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
 }
 
 export default function TodoStats({
@@ -22,6 +34,9 @@ export default function TodoStats({
   selectedDate,
   onChangeDate,
 }: Props) {
+  const [open, setOpen] = React.useState(false);
+  const today = startOfDay(new Date());
+
   return (
     <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {/* Pending */}
@@ -66,11 +81,15 @@ export default function TodoStats({
         </div>
       </div>
 
-      {/* Today / Date Selector */}
-      <label className="group relative overflow-hidden rounded-xl border border-border bg-card p-6 transition-all hover:border-primary/20 cursor-pointer">
+      {/* Day Filter (Modal) */}
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="group relative overflow-hidden rounded-xl border border-border bg-card p-6 text-left transition-all hover:border-primary/20"
+      >
         <div className="flex items-center justify-between mb-4">
           <div className="p-2 rounded-lg bg-secondary text-primary">
-            <Calendar className="w-5 h-5" />
+            <CalendarIcon className="w-5 h-5" />
           </div>
           <span className="text-xs font-mono text-muted-foreground">
             DAY FILTER
@@ -79,33 +98,36 @@ export default function TodoStats({
 
         <div className="space-y-1">
           <p className="text-2xl font-medium tracking-tight">
-            {selectedDate.toLocaleDateString("es-ES", {
-              weekday: "long",
-              day: "numeric",
-            })}
+            {format(selectedDate, "EEEE d", { locale: es })}
           </p>
           <p className="text-sm text-muted-foreground">
-            {selectedDate.toLocaleDateString("es-ES", {
-              month: "long",
-              year: "numeric",
-            })}
+            {format(selectedDate, "MMMM yyyy", { locale: es })}
           </p>
         </div>
+      </button>
 
-        {/* input date invisible que cubre TODO el card */}
-        <input
-          type="date"
-          className="absolute inset-0 opacity-0 cursor-pointer"
-          max={toDateInputValue(new Date())}
-          value={toDateInputValue(selectedDate)}
-          onChange={(e) => {
-            if (!e.target.value) return;
-            const [year, month, day] = e.target.value.split("-").map(Number);
-            const newDate = new Date(year, month - 1, day);
-            onChangeDate(newDate);
-          }}
-        />
-      </label>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="w-auto p-4">
+          <DialogHeader>
+            <DialogTitle>Selecciona una fecha</DialogTitle>
+            <DialogDescription>Filtra tus tareas por día.</DialogDescription>
+          </DialogHeader>
+
+          <div className="flex justify-center">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={(d: Date | undefined) => {
+                if (!d) return;
+                onChangeDate(startOfDay(d));
+                setOpen(false); // ✅ cierra al elegir
+              }}
+              disabled={(date: Date) => startOfDay(date) > today}
+              initialFocus
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
