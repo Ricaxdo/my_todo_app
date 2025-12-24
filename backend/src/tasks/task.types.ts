@@ -7,5 +7,6 @@ export interface Task {
   priority: Priority;
   category: string;
   createdAt: string; // ISO
-  updatedAt?: string; // OPCIONAL (no la pongas nunca explícitamente como undefined)
+  updatedAt?: string; // opcional
+  dueDate?: string | null; // ✅ nuevo (ISO o null)
 }

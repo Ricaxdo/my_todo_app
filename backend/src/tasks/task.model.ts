@@ -23,11 +23,32 @@ const taskSchema = new Schema(
       trim: true,
     },
 
-    // ✅ NUEVO: owner
-    owner: {
+    // ✅ NUEVO: workspace
+    workspaceId: {
+      type: Schema.Types.ObjectId,
+      ref: "Workspace",
+      required: true,
+      index: true,
+    },
+
+    // ✅ NUEVO: audit mínimo
+    createdBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
+    },
+
+    // ✅ STEP 4: duración
+    dueDate: {
+      type: Date,
+      required: false,
+    },
+
+    // 🟡 TEMPORAL
+    owner: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: false,
       index: true,
     },
   },
@@ -40,5 +61,4 @@ const taskSchema = new Schema(
 );
 
 export type TaskDocument = InferSchemaType<typeof taskSchema>;
-
 export const TaskModel = model<TaskDocument>("Task", taskSchema);

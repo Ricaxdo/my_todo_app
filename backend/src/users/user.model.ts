@@ -8,6 +8,7 @@ type UserSchema = {
   phone: string; // guardaremos solo dígitos
   email: string;
   password: string;
+  personalWorkspaceId?: mongoose.Types.ObjectId | null;
 };
 
 type UserMethods = {
@@ -57,6 +58,11 @@ const userSchema = new mongoose.Schema<
       lowercase: true,
       trim: true,
       match: [/^\S+@\S+\.\S+$/, "invalid email"],
+    },
+    personalWorkspaceId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Workspace",
+      default: null,
     },
     password: {
       type: String,

@@ -1,0 +1,34 @@
+import { Router } from "express";
+import { auth } from "../middleware/auth";
+import { requireWorkspaceMember } from "./workspace.middleware";
+import {
+  createWorkspaceTodo,
+  deleteWorkspaceTodo,
+  getWorkspaceTodos,
+  updateWorkspaceTodo,
+} from "./workspaceTodos.controller";
+
+export const workspaceTodosRoutes = Router();
+
+workspaceTodosRoutes.use(auth);
+
+workspaceTodosRoutes.get(
+  "/:workspaceId/todos",
+  requireWorkspaceMember,
+  getWorkspaceTodos
+);
+workspaceTodosRoutes.post(
+  "/:workspaceId/todos",
+  requireWorkspaceMember,
+  createWorkspaceTodo
+);
+workspaceTodosRoutes.put(
+  "/:workspaceId/todos/:id",
+  requireWorkspaceMember,
+  updateWorkspaceTodo
+);
+workspaceTodosRoutes.delete(
+  "/:workspaceId/todos/:id",
+  requireWorkspaceMember,
+  deleteWorkspaceTodo
+);

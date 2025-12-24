@@ -4,7 +4,14 @@ import type { AuthRequest } from "../middleware/auth";
 import { UserModel } from "../users/user.model";
 import { signToken } from "./auth.utils";
 
+// 👇 ajusta los paths según tu estructura real
+import { WorkspaceModel } from "../workspaces/workspace.model";
+import { WorkspaceMemberModel } from "../workspaces/workspaceMember.model";
+
 export async function signup(req: Request, res: Response, next: NextFunction) {
+  let createdUserId: string | null = null;
+  let createdWorkspaceId: string | null = null;
+
   try {
     const { name, lastName, phone, email, password } = req.body as {
       name: string;
@@ -15,8 +22,9 @@ export async function signup(req: Request, res: Response, next: NextFunction) {
     };
 
     const cleanEmail = email.trim().toLowerCase();
-    const cleanPhone = phone.replace(/\D/g, ""); // guardamos 10 dígitos
+    const cleanPhone = phone.replace(/\D/g, "");
 
+    // 1) Crear user
     const user = await UserModel.create({
       name: name.trim(),
       lastName: lastName.trim(),
@@ -24,14 +32,61 @@ export async function signup(req: Request, res: Response, next: NextFunction) {
       email: cleanEmail,
       password,
     });
+    createdUserId = user._id.toString();
+
+    // 2) Crear workspace personal
+    // 2) Crear workspace personal ✅ SIN inviteCode
+    const personalWorkspace = await WorkspaceModel.create({
+      name: "Personal",
+      owner: user._id,
+      isPersonal: true,
+    });
+
+    createdWorkspaceId = personalWorkspace._id.toString();
+
+    // 3) Crear membership
+    await WorkspaceMemberModel.create({
+      workspaceId: personalWorkspace._id,
+      userId: user._id,
+      role: "owner",
+    });
+
+    // 4) Link en user
+    user.personalWorkspaceId = personalWorkspace._id;
+    await user.save();
 
     const token = signToken({
       _id: user._id.toString(),
       email: user.email,
     });
 
-    return res.status(201).json({ token });
+    return res.status(201).json({
+      token,
+      personalWorkspaceId: personalWorkspace._id.toString(),
+    });
   } catch (err) {
+    console.log("[signup error]", {
+      code: (err as any)?.code,
+      keyPattern: (err as any)?.keyPattern,
+      keyValue: (err as any)?.keyValue,
+      message: (err as any)?.message,
+    });
+    // 🔥 rollback best-effort para no dejar basura
+    try {
+      if (createdWorkspaceId) {
+        await WorkspaceMemberModel.deleteMany({
+          workspaceId: createdWorkspaceId,
+        });
+        await WorkspaceModel.findByIdAndDelete(createdWorkspaceId);
+      }
+
+      if (createdUserId) {
+        await UserModel.findByIdAndDelete(createdUserId);
+      }
+    } catch {
+      // si el rollback falla, no bloqueamos el error original
+    }
+
     return next(err);
   }
 }
@@ -67,7 +122,7 @@ export async function me(req: AuthRequest, res: Response, next: NextFunction) {
     const userId = req.user?._id;
 
     const user = await UserModel.findById(userId).select(
-      "name lastName phone email"
+      "name lastName phone email personalWorkspaceId"
     );
 
     if (!user) throw unauthorized("authorization required");
@@ -79,6 +134,7 @@ export async function me(req: AuthRequest, res: Response, next: NextFunction) {
         lastName: user.lastName,
         phone: user.phone,
         email: user.email,
+        personalWorkspaceId: user.personalWorkspaceId?.toString() ?? null,
       },
     });
   } catch (err) {

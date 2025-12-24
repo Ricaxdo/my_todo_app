@@ -1,5 +1,6 @@
 "use client";
 
+import { Card } from "@/components/ui/card";
 import { useTodoDashboard } from "../app/hooks/useTodoDashboard";
 import AddTaskForm from "./AddTaskForm";
 import TaskList from "./TaskList";
@@ -25,6 +26,7 @@ export default function TodoDashboard() {
     setSelectedDate,
     priority,
     setPriority,
+    isWorkspaceSwitching,
   } = useTodoDashboard();
 
   return (
@@ -44,41 +46,71 @@ export default function TodoDashboard() {
           <TodoHeader />
         </section>
 
-        {/* PROGRESS */}
-        <section id="progress">
-          <TodoStats
-            activeCount={activeCount}
-            completionRate={completionRate}
-            selectedDate={selectedDate}
-            onChangeDate={setSelectedDate}
-          />
-        </section>
+        {isWorkspaceSwitching ? (
+          <section id="progress" className="space-y-6">
+            {/* skeleton PROGRESS */}
+            <Card className="p-6 space-y-3">
+              <div className="h-4 w-40 animate-pulse rounded bg-muted" />
+              <div className="h-24 w-full animate-pulse rounded bg-muted" />
+            </Card>
 
-        <AddTaskForm
-          newTask={newTask}
-          setNewTask={setNewTask}
-          onSubmit={handleAddTask}
-          priority={priority} // 👈
-          setPriority={setPriority}
-        />
+            {/* skeleton ADD FORM */}
+            <Card className="p-6 space-y-3">
+              <div className="h-4 w-32 animate-pulse rounded bg-muted" />
+              <div className="h-10 w-full animate-pulse rounded bg-muted" />
+              <div className="h-10 w-full animate-pulse rounded bg-muted" />
+            </Card>
 
-        {/* TASKS */}
-        <section id="tasks" className="relative">
-          <div id="tasks-anchor" className="absolute -top-6 h-1 w-1" />
+            {/* skeleton TASK LIST */}
+            <section id="tasks" className="relative">
+              <div id="tasks-anchor" className="absolute -top-6 h-1 w-1" />
+              <Card className="p-6 space-y-3">
+                <div className="h-4 w-28 animate-pulse rounded bg-muted" />
+                <div className="h-10 w-full animate-pulse rounded bg-muted" />
+                <div className="h-10 w-full animate-pulse rounded bg-muted" />
+                <div className="h-10 w-full animate-pulse rounded bg-muted" />
+              </Card>
+            </section>
+          </section>
+        ) : (
+          <>
+            {/* PROGRESS */}
+            <section id="progress">
+              <TodoStats
+                activeCount={activeCount}
+                completionRate={completionRate}
+                selectedDate={selectedDate}
+                onChangeDate={setSelectedDate}
+              />
+            </section>
 
-          <main className="space-y-6">
-            <ToolBar
-              activeFilter={activeFilter}
-              setActiveFilter={setActiveFilter}
+            <AddTaskForm
+              newTask={newTask}
+              setNewTask={setNewTask}
+              onSubmit={handleAddTask}
+              priority={priority}
+              setPriority={setPriority}
             />
 
-            <TaskList
-              tasks={filteredTasks}
-              toggleTask={toggleTask}
-              deleteTask={deleteTask}
-            />
-          </main>
-        </section>
+            {/* TASKS */}
+            <section id="tasks" className="relative">
+              <div id="tasks-anchor" className="absolute -top-6 h-1 w-1" />
+
+              <main className="space-y-6">
+                <ToolBar
+                  activeFilter={activeFilter}
+                  setActiveFilter={setActiveFilter}
+                />
+
+                <TaskList
+                  tasks={filteredTasks}
+                  toggleTask={toggleTask}
+                  deleteTask={deleteTask}
+                />
+              </main>
+            </section>
+          </>
+        )}
 
         <TodoFooter />
       </div>

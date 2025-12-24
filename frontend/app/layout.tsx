@@ -6,6 +6,7 @@ import "./globals.css";
 import { RouteLoadingOverlay } from "@/components/RouteLoadingOverlay";
 import { AuthProvider } from "@/features/auth/auth-context";
 import { NavigationProvider } from "@/features/navigation/navigation-context";
+import { WorkspaceProvider } from "@/features/workspaces/workspace-context";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({
@@ -31,7 +32,7 @@ export default function RootLayout({
         <NavigationProvider>
           <AuthProvider>
             <RouteLoadingOverlay />
-            {children}
+            <WorkspaceProvider>{children}</WorkspaceProvider>
           </AuthProvider>
         </NavigationProvider>
       </body>

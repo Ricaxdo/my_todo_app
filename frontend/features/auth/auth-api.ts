@@ -9,6 +9,10 @@ export type Me = {
   email: string;
 };
 
+export type MeResponse = {
+  user: Me;
+};
+
 export type SigninPayload = {
   email: string;
   password: string;
@@ -17,13 +21,18 @@ export type SigninPayload = {
 export type SignupPayload = {
   name: string;
   lastName?: string;
-  phone?: string; // puedes mandar "333..." ya normalizado
+  phone?: string;
   email: string;
   password: string;
 };
 
 export type AuthResponse = {
   token: string;
+};
+
+export type SignupResponse = {
+  token: string;
+  personalWorkspaceId: string | null;
 };
 
 function saveToken(token: string) {
@@ -51,7 +60,11 @@ export function getAuthErrorMessage(err: unknown): string {
 }
 
 export const authApi = {
-  me: () => apiFetch<Me>("/auth/me"),
+  // ✅ backend devuelve { user: {...} }
+  me: async () => {
+    const data = await apiFetch<MeResponse>("/auth/me");
+    return data.user;
+  },
 
   signin: async (payload: SigninPayload) => {
     const res = await apiFetch<AuthResponse>("/auth/login", {
@@ -63,11 +76,16 @@ export const authApi = {
     return res;
   },
 
-  signup: (payload: SignupPayload) =>
-    apiFetch<unknown>("/auth/signup", {
+  // ✅ backend devuelve { token, personalWorkspaceId }
+  signup: async (payload: SignupPayload) => {
+    const res = await apiFetch<SignupResponse>("/auth/signup", {
       method: "POST",
       body: JSON.stringify(payload),
-    }),
+    });
+
+    saveToken(res.token); // 👈 CLAVE
+    return res;
+  },
 
   logout: () => {
     clearToken();

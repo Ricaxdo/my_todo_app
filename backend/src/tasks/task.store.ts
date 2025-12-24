@@ -2,16 +2,25 @@
 import { TaskModel, type TaskDocument } from "./task.model";
 import type { Priority, Task } from "./task.types";
 
-function mapDocToTask(doc: TaskDocument & { _id: unknown }): Task {
-  let createdAtIso: string;
+function startOfDay(date: Date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
 
-  if (doc.createdAt instanceof Date) {
-    createdAtIso = doc.createdAt.toISOString();
-  } else if (doc.createdAt) {
-    createdAtIso = new Date(doc.createdAt).toISOString();
-  } else {
-    createdAtIso = new Date().toISOString();
-  }
+function endOfDay(date: Date) {
+  const d = new Date(date);
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
+function mapDocToTask(doc: TaskDocument & { _id: unknown }): Task {
+  const createdAtIso =
+    doc.createdAt instanceof Date
+      ? doc.createdAt.toISOString()
+      : doc.createdAt
+      ? new Date(doc.createdAt).toISOString()
+      : new Date().toISOString();
 
   const result: Task = {
     id: String(doc._id),
@@ -27,74 +36,117 @@ function mapDocToTask(doc: TaskDocument & { _id: unknown }): Task {
       doc.updatedAt instanceof Date
         ? doc.updatedAt.toISOString()
         : new Date(doc.updatedAt).toISOString();
-
     result.updatedAt = updatedAtIso;
   }
+
+  // ✅ dueDate para FE (ISO o null)
+  result.dueDate = doc.dueDate
+    ? doc.dueDate instanceof Date
+      ? doc.dueDate.toISOString()
+      : new Date(doc.dueDate).toISOString()
+    : null;
 
   return result;
 }
 
-// ✅ Antes: getAllTasks()
-// ✅ Ahora: solo tasks del usuario logueado
-export async function getMyTasks(userId: string): Promise<Task[]> {
-  const docs = await TaskModel.find({ owner: userId })
+export async function getWorkspaceTasks(
+  workspaceId: string,
+  selectedDate?: Date
+): Promise<Task[]> {
+  const date = selectedDate ?? new Date();
+
+  const from = startOfDay(date);
+  const to = endOfDay(date);
+
+  const docs = await TaskModel.find({
+    workspaceId,
+    createdAt: { $lte: to },
+    $or: [
+      { dueDate: { $exists: false } }, // 👈 no dueDate = solo día creado
+      { dueDate: { $gte: from } }, // 👈 persiste hasta dueDate
+    ],
+  })
     .sort({ createdAt: -1 })
     .exec();
 
   return docs.map(mapDocToTask);
 }
 
-// ✅ Crear task SIEMPRE con owner del backend
-export async function createTaskForUser(
+export async function createTaskInWorkspace(
+  workspaceId: string,
   userId: string,
-  input: { text: string; priority?: Priority; category?: string }
+  input: {
+    text: string;
+    priority?: Priority;
+    category?: string;
+    dueDate?: string; // ISO
+  }
 ): Promise<Task> {
   const doc = await TaskModel.create({
     text: input.text,
     priority: input.priority ?? "medium",
     category: input.category ?? "General",
-    owner: userId, // ✅ clave
+    workspaceId,
+    createdBy: userId,
+    ...(input.dueDate ? { dueDate: new Date(input.dueDate) } : {}),
   });
 
   return mapDocToTask(doc);
 }
 
-/**
- * Actualiza SOLO campos mutables.
- * (text, completed, priority, category)
- * ✅ y SOLO si la task pertenece al user
- */
-export async function updateTaskForUser(
-  userId: string,
+export async function updateTaskInWorkspace(
+  workspaceId: string,
   taskId: string,
-  data: Partial<Pick<Task, "text" | "completed" | "priority" | "category">>
+  data: Partial<Pick<Task, "text" | "completed" | "priority" | "category">> & {
+    dueDate?: string | null;
+  }
 ): Promise<Task | null> {
-  const updateData: Record<string, unknown> = {};
+  const setData: Record<string, unknown> = {};
+  const unsetData: Record<string, unknown> = {};
 
-  if (data.text !== undefined) updateData.text = data.text;
-  if (data.completed !== undefined) updateData.completed = data.completed;
-  if (data.priority !== undefined) updateData.priority = data.priority;
-  if (data.category !== undefined) updateData.category = data.category;
+  if (data.text !== undefined) setData.text = data.text;
+  if (data.completed !== undefined) setData.completed = data.completed;
+  if (data.priority !== undefined) setData.priority = data.priority;
+  if (data.category !== undefined) setData.category = data.category;
+
+  if (data.dueDate !== undefined) {
+    if (data.dueDate) setData.dueDate = new Date(data.dueDate);
+    else unsetData.dueDate = 1;
+  }
+
+  const update =
+    Object.keys(unsetData).length === 0
+      ? { $set: setData }
+      : {
+          ...(Object.keys(setData).length ? { $set: setData } : {}),
+          $unset: unsetData,
+        };
 
   const doc = await TaskModel.findOneAndUpdate(
-    { _id: taskId, owner: userId }, // ✅ filtro multi-user
-    updateData,
+    { _id: taskId, workspaceId },
+    update,
     { new: true, runValidators: true }
   ).exec();
 
-  if (!doc) return null;
-  return mapDocToTask(doc);
+  return doc ? mapDocToTask(doc) : null;
 }
 
-// ✅ borrar SOLO si pertenece al user
-export async function deleteTaskForUser(
-  userId: string,
+export async function deleteTaskInWorkspace(
+  workspaceId: string,
   taskId: string
 ): Promise<boolean> {
   const doc = await TaskModel.findOneAndDelete({
     _id: taskId,
-    owner: userId,
+    workspaceId,
   }).exec();
 
   return doc !== null;
+}
+
+export async function deleteAllTasksInWorkspace(
+  workspaceId: string
+): Promise<number> {
+  const result = await TaskModel.deleteMany({ workspaceId }).exec();
+  // mongoose devuelve deletedCount (puede ser undefined)
+  return result.deletedCount ?? 0;
 }

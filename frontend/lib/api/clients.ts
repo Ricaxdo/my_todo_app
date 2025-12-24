@@ -6,40 +6,65 @@ export type ApiError = {
   message: string;
 };
 
-function getToken() {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("token");
+function joinUrl(base: string, path: string) {
+  const b = base.replace(/\/+$/, "");
+  const p = path.startsWith("/") ? path : `/${path}`;
+  return `${b}${p}`;
 }
 
 export async function apiFetch<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const token = getToken();
+  const token =
+    typeof window === "undefined" ? null : localStorage.getItem("token");
 
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.headers ?? {}),
-    },
-  });
+  const url = joinUrl(API_URL, path);
 
-  // Si tu backend a veces responde sin JSON (204, etc.)
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      ...options,
+      headers: {
+        ...(options.headers ?? {}),
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+  } catch (err: unknown) {
+    throw {
+      status: 0,
+      message: err instanceof Error ? err.message : "Network error",
+    } satisfies ApiError;
+  }
+
   const text = await res.text();
-  const body = text ? JSON.parse(text) : {};
+  let body: Record<string, unknown> = {};
+
+  try {
+    body = text ? (JSON.parse(text) as Record<string, unknown>) : {};
+  } catch {
+    body = {};
+  }
 
   if (!res.ok) {
     if (res.status === 401 && typeof window !== "undefined") {
       localStorage.removeItem("token");
     }
 
+    const message =
+      typeof body.error === "string"
+        ? body.error
+        : typeof body.message === "string"
+        ? body.message
+        : `Request failed (${res.status})`;
+
     throw {
       status: res.status,
-      message: body?.error || body?.message || `Request failed (${res.status})`,
-    } as ApiError;
+      message,
+    } satisfies ApiError;
   }
 
+  // ✅ ESTO es lo que te falta en tu archivo
   return body as T;
 }
