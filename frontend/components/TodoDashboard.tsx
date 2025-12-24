@@ -27,6 +27,13 @@ export default function TodoDashboard() {
     priority,
     setPriority,
     isWorkspaceSwitching,
+    dueDate,
+    setDueDate,
+    members,
+    assignees,
+    setAssignees,
+    isPersonalWorkspace,
+    meId,
   } = useTodoDashboard();
 
   return (
@@ -90,6 +97,13 @@ export default function TodoDashboard() {
               onSubmit={handleAddTask}
               priority={priority}
               setPriority={setPriority}
+              dueDate={dueDate}
+              setDueDate={setDueDate}
+              isPersonalWorkspace={isPersonalWorkspace}
+              meId={meId ?? ""} // ✅ fallback para no romper types
+              members={members}
+              assignees={assignees}
+              setAssignees={setAssignees}
             />
 
             {/* TASKS */}

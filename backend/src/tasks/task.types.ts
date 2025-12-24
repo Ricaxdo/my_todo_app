@@ -9,4 +9,5 @@ export interface Task {
   createdAt: string; // ISO
   updatedAt?: string; // opcional
   dueDate?: string | null; // ✅ nuevo (ISO o null)
+  assignees: string[]; // ✅ nuevo
 }

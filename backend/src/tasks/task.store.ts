@@ -1,7 +1,14 @@
 // src/tasks/task.store.ts
 import { DateTime } from "luxon";
+import mongoose from "mongoose";
 import { TaskModel, type TaskDocument } from "./task.model";
 import type { Priority, Task } from "./task.types";
+
+function toObjectIds(ids: string[]): mongoose.Types.ObjectId[] {
+  return ids
+    .filter((id) => mongoose.Types.ObjectId.isValid(id))
+    .map((id) => new mongoose.Types.ObjectId(id));
+}
 
 const DEFAULT_TZ = "America/Mexico_City";
 
@@ -49,7 +56,15 @@ function mapDocToTask(doc: TaskDocument & { _id: unknown }): Task {
     priority: doc.priority,
     category: doc.category,
     createdAt: createdAtIso,
+
+    // ✅ NUEVO (siempre)
+    assignees: Array.isArray(doc.assignees)
+      ? doc.assignees.map((id) => String(id))
+      : [],
   };
+  result.assignees = Array.isArray(doc.assignees)
+    ? doc.assignees.map((id) => String(id))
+    : [];
 
   if (doc.updatedAt) {
     const updatedAtIso =
@@ -106,7 +121,8 @@ export async function createTaskInWorkspace(
     text: string;
     priority?: Priority;
     category?: string;
-    dueDate?: string; // ISO o YYYY-MM-DD
+    dueDate?: string;
+    assignees?: string[];
   },
   tz: string = DEFAULT_TZ
 ): Promise<Task> {
@@ -114,13 +130,22 @@ export async function createTaskInWorkspace(
     ? parseDueDateInput(input.dueDate, tz)
     : endOfTodayInTz(tz);
 
+  // ✅ default: si no mandan assignees, se asigna al creador
+  const assigneeIds =
+    Array.isArray(input.assignees) && input.assignees.length
+      ? input.assignees
+      : [userId];
+
+  const assignees = toObjectIds(assigneeIds);
+
   const doc = await TaskModel.create({
     text: input.text,
     priority: input.priority ?? "medium",
     category: input.category ?? "General",
-    workspaceId,
-    createdBy: userId,
+    workspaceId: new mongoose.Types.ObjectId(workspaceId),
+    createdBy: new mongoose.Types.ObjectId(userId),
     dueDate: due,
+    assignees,
   });
 
   return mapDocToTask(doc);

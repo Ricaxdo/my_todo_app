@@ -19,4 +19,5 @@ export interface Task {
   category: string;
   createdAt: Date;
   updatedAt?: Date;
+  assignees?: string[];
 }

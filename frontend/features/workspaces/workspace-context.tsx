@@ -360,14 +360,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
           data?.message || data?.error || `REMOVE member failed (${res.status})`
         );
       }
+
       await reloadWorkspaces();
     },
-    []
+    [reloadWorkspaces] // ✅ aquí
   );
-
-  useEffect(() => {
-    reloadWorkspaces();
-  }, [reloadWorkspaces]);
 
   const currentWorkspace = useMemo(() => {
     if (!currentWorkspaceId) return null;

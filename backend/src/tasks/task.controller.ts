@@ -92,11 +92,12 @@ export async function createTask(
     const personalWorkspaceId = await getPersonalWorkspaceId(userId);
     const tz = getRequestTimezone(req);
 
-    const { text, priority, category, dueDate } = req.body as {
+    const { text, priority, category, dueDate, assignees } = req.body as {
       text?: string;
       priority?: "low" | "medium" | "high";
       category?: string;
-      dueDate?: string; // ISO o YYYY-MM-DD
+      dueDate?: string;
+      assignees?: string[];
     };
 
     if (!text || typeof text !== "string" || !text.trim()) {

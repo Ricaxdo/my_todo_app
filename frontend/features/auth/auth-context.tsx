@@ -2,13 +2,7 @@
 
 import type { Me } from "@/features/auth/auth-api";
 import { authApi } from "@/features/auth/auth-api";
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 
 type LoginPayload = { email: string; password: string };
 
@@ -133,21 +127,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const value = useMemo<AuthContextValue>(
-    () => ({
-      user,
-      isAuthenticated,
-      isLoading,
-      isAuthLoading,
-      error,
-      login,
-      signup,
-      logout,
-      refreshMe,
-      clearError,
-    }),
-    [user, isAuthenticated, isLoading, isAuthLoading, error]
-  );
+  const value: AuthContextValue = {
+    user,
+    isAuthenticated,
+    isLoading,
+    isAuthLoading,
+    error,
+    login,
+    signup,
+    logout,
+    refreshMe,
+    clearError,
+  };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
