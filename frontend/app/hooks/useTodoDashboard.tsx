@@ -2,7 +2,7 @@
 
 import { useWorkspaces } from "@/features/workspaces/workspace-context";
 import type React from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BackendTask, Priority, Task } from "../types/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -34,6 +34,23 @@ export function useTodoDashboard() {
   const [newTask, setNewTask] = useState("");
   const [activeFilter, setActiveFilter] = useState<Filter>("all");
   const [priority, setPriority] = useState<Priority>("low");
+
+  const [isWorkspaceSwitching, setIsWorkspaceSwitching] = useState(false);
+  const timerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    // cuando cambie workspaceId → muestra loader breve
+    setIsWorkspaceSwitching(true);
+
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    timerRef.current = window.setTimeout(() => {
+      setIsWorkspaceSwitching(false);
+    }, 400);
+
+    return () => {
+      if (timerRef.current) window.clearTimeout(timerRef.current);
+    };
+  }, [currentWorkspaceId]);
 
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
     const d = new Date();
@@ -278,5 +295,7 @@ export function useTodoDashboard() {
     completedCount,
     activeCount,
     completionRate,
+
+    isWorkspaceSwitching,
   };
 }

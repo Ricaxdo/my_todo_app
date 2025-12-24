@@ -22,7 +22,8 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { ConfirmActionDialog } from "./ConfirmActionDialog";
 import { CreateWorkspaceModal } from "./CreateWorkspaceModal";
 import { useWorkspaces } from "./workspace-context";
 
@@ -36,6 +37,8 @@ type Member = {
   joinedAt?: string | Date;
   isYou: boolean;
 };
+
+type TabKey = "join" | "members" | "activity";
 
 export function WorkspaceModal({
   open,
@@ -75,6 +78,19 @@ export function WorkspaceModal({
   const [membersLoading, setMembersLoading] = useState(false);
   const [membersError, setMembersError] = useState<string | null>(null);
 
+  const [leaveOpen, setLeaveOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+
+  const [removeOpen, setRemoveOpen] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<Member | null>(null);
+
+  const lastTabByWs = useRef<Record<string, TabKey>>({});
+  const [tab, setTab] = useState<TabKey>("activity");
+
+  const [switchingWs, setSwitchingWs] = useState(false);
+  const switchTimerRef = useRef<number | null>(null);
+
   const myRole = useMemo<Role | undefined>(() => {
     const me = members.find((m) => m.isYou);
     return me?.role;
@@ -111,6 +127,64 @@ export function WorkspaceModal({
     run();
   }, [currentWorkspaceId, currentWorkspace?.isPersonal, getWorkspaceMembers]);
 
+  useLayoutEffect(() => {
+    if (!currentWorkspaceId || !currentWorkspace) return;
+
+    const saved = lastTabByWs.current[currentWorkspaceId];
+    const fallback: TabKey = currentWorkspace.isPersonal
+      ? "activity"
+      : "members";
+
+    let next = (saved ?? fallback) as TabKey;
+
+    if (currentWorkspace.isPersonal) next = "activity";
+    if (!currentWorkspace.isPersonal && maxReached && next === "join")
+      next = "members";
+
+    setTab((prev) => (prev === next ? prev : next));
+  }, [currentWorkspaceId, currentWorkspace, maxReached]);
+
+  const onTabChange = (v: string) => {
+    const next = v as TabKey;
+    setTab(next);
+
+    if (currentWorkspaceId) {
+      lastTabByWs.current[currentWorkspaceId] = next;
+    }
+  };
+
+  const switchWorkspace = (w: { id: string; isPersonal: boolean }) => {
+    // muestra loader
+    setSwitchingWs(true);
+
+    // calcula tab destino ANTES
+    const saved = lastTabByWs.current[w.id];
+    const fallback: TabKey = w.isPersonal ? "activity" : "members";
+    let next = (saved ?? fallback) as TabKey;
+
+    if (w.isPersonal) next = "activity";
+    if (!w.isPersonal && maxReached && next === "join") next = "members";
+
+    // aplica tab ya
+    setTab(next);
+
+    // cambia workspace ya
+    setCurrentWorkspaceId(w.id);
+    setJoinMsg(null);
+
+    // oculta loader después de 300ms
+    if (switchTimerRef.current) window.clearTimeout(switchTimerRef.current);
+    switchTimerRef.current = window.setTimeout(() => {
+      setSwitchingWs(false);
+    }, 400);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (switchTimerRef.current) window.clearTimeout(switchTimerRef.current);
+    };
+  }, []);
+
   if (!currentWorkspace) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -132,6 +206,13 @@ export function WorkspaceModal({
     );
   }
 
+  const workspace = currentWorkspace;
+
+  const isPersonal = workspace.isPersonal;
+  const showJoinTab = !isPersonal && !maxReached;
+  const showMembersTab = !isPersonal;
+  const showActivityTab = true;
+
   const onJoin = async () => {
     const clean = joinCode.trim().toUpperCase();
     if (!clean) return;
@@ -151,8 +232,8 @@ export function WorkspaceModal({
   };
 
   const handleCopy = async () => {
-    if (currentWorkspace.inviteCode) {
-      await navigator.clipboard.writeText(currentWorkspace.inviteCode);
+    if (workspace.inviteCode) {
+      await navigator.clipboard.writeText(workspace.inviteCode);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -160,36 +241,7 @@ export function WorkspaceModal({
 
   const canShowActions = !currentWorkspace.isPersonal;
 
-  const onLeave = async () => {
-    if (!currentWorkspaceId) return;
-    const ok = window.confirm("¿Seguro que quieres salir de este workspace?");
-    if (!ok) return;
-
-    try {
-      await leaveWorkspace(currentWorkspaceId);
-      await refreshWorkspaces();
-      setJoinMsg("✅ Saliste del workspace");
-    } catch (e: unknown) {
-      setJoinMsg(e instanceof Error ? e.message : "No se pudo salir");
-    }
-  };
-
-  const onDelete = async () => {
-    if (!currentWorkspaceId) return;
-    const ok = window.confirm(
-      "¿Eliminar este workspace? Se borrarán miembros y tareas."
-    );
-    if (!ok) return;
-
-    try {
-      await deleteWorkspace(currentWorkspaceId);
-      await refreshWorkspaces();
-      setJoinMsg("✅ Workspace eliminado");
-      onOpenChange(false);
-    } catch (e: unknown) {
-      setJoinMsg(e instanceof Error ? e.message : "No se pudo eliminar");
-    }
-  };
+  const canSeeInviteCode = myRole === "owner" || myRole === "admin";
 
   return (
     <>
@@ -203,7 +255,7 @@ export function WorkspaceModal({
 
               <div className="flex-1">
                 <DialogTitle className="flex items-center gap-2 text-xl">
-                  {currentWorkspace.name}
+                  {workspace.name}
                 </DialogTitle>
                 <DialogDescription>
                   Gestiona tu workspace y colabora con tu equipo
@@ -215,14 +267,22 @@ export function WorkspaceModal({
                 <div className="flex items-center gap-2 mr-5 mt-3">
                   {/* si NO eres owner => puedes salir */}
                   {myRole && myRole !== "owner" && (
-                    <Button variant="outline" size="sm" onClick={onLeave}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setLeaveOpen(true)}
+                    >
                       Salir del workspace
                     </Button>
                   )}
 
                   {/* si eres owner => puedes eliminar */}
                   {myRole === "owner" && (
-                    <Button variant="destructive" size="sm" onClick={onDelete}>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setDeleteOpen(true)}
+                    >
                       Eliminar workspace
                     </Button>
                   )}
@@ -247,10 +307,7 @@ export function WorkspaceModal({
                       ? "border-primary bg-primary/5"
                       : "border-border"
                   )}
-                  onClick={() => {
-                    setCurrentWorkspaceId(w.id);
-                    setJoinMsg(null);
-                  }}
+                  onClick={() => switchWorkspace(w)}
                 >
                   <div className="flex items-center justify-center gap-3">
                     <div
@@ -304,234 +361,238 @@ export function WorkspaceModal({
             </div>
           </div>
 
-          {!currentWorkspace.isPersonal && currentWorkspace.inviteCode && (
-            <Card className="border-dashed bg-muted/30 p-4">
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <UserPlus className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-sm font-medium">Código de invitación</p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 rounded-md bg-background px-3 py-2 font-mono text-sm font-semibold tracking-wider">
-                    {currentWorkspace.inviteCode}
-                  </code>
-                  <Button
-                    size="sm"
-                    variant={copied ? "default" : "outline"}
-                    onClick={handleCopy}
-                    className="gap-2"
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="h-4 w-4" />
-                        Copiado
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-4 w-4" />
-                        Copiar
-                      </>
-                    )}
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Comparte este código para invitar a otros a tu workspace
-                </p>
-              </div>
-            </Card>
-          )}
-
-          <Tabs defaultValue="join" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="join" className="gap-2">
-                <UserPlus className="h-4 w-4" />
-                <span className="hidden sm:inline">Unirse</span>
-              </TabsTrigger>
-              <TabsTrigger value="members" className="gap-2">
-                <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">Miembros</span>
-              </TabsTrigger>
-              <TabsTrigger value="activity" className="gap-2">
-                <Activity className="h-4 w-4" />
-                <span className="hidden sm:inline">Actividad</span>
-              </TabsTrigger>
-            </TabsList>
-
-            {/* ✅ MEMBERS reales */}
-            <TabsContent value="members" className="space-y-4 pt-4">
-              {currentWorkspace.isPersonal ? (
-                <Card className="flex flex-col items-center justify-center gap-3 border-dashed p-8 text-center">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                    <Users className="h-6 w-6 text-muted-foreground" />
+          {!workspace.isPersonal &&
+            workspace.inviteCode &&
+            canSeeInviteCode && (
+              <Card className="border-dashed bg-muted/30 p-4">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <UserPlus className="h-4 w-4 text-muted-foreground" />
+                    <p className="text-sm font-medium">Código de invitación</p>
                   </div>
-                  <div className="space-y-1">
-                    <p className="font-medium">Workspace Personal</p>
-                    <p className="text-sm text-muted-foreground">
-                      Este workspace no tiene miembros adicionales
-                    </p>
+
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 rounded-md bg-background px-3 py-2 font-mono text-sm font-semibold tracking-wider">
+                      {workspace.inviteCode}
+                    </code>
+
+                    <Button
+                      size="sm"
+                      variant={copied ? "default" : "outline"}
+                      onClick={handleCopy}
+                      className="gap-2"
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="h-4 w-4" />
+                          Copiado
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-4 w-4" />
+                          Copiar
+                        </>
+                      )}
+                    </Button>
                   </div>
-                </Card>
-              ) : (
-                <Card className="p-4">
-                  {membersLoading ? (
-                    <p className="text-sm text-muted-foreground">
-                      Cargando miembros...
-                    </p>
-                  ) : membersError ? (
-                    <p className="text-sm text-destructive">{membersError}</p>
-                  ) : members.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      No hay miembros.
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {members.map((m) => {
-                        const canRemove =
-                          myRole === "owner"
-                            ? m.role !== "owner" && !m.isYou
-                            : myRole === "admin"
-                            ? m.role === "member" && !m.isYou
-                            : false;
 
-                        return (
-                          <div
-                            key={m.userId}
-                            className="flex items-center justify-between rounded-md border p-3"
-                          >
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-medium">
-                                {m.name} {m.lastName ?? ""}{" "}
-                                {m.isYou ? "(tú)" : ""}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {m.role}
-                              </p>
-                            </div>
-
-                            {canRemove && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={async () => {
-                                  const ok = window.confirm(
-                                    `¿Remover a ${m.name} del workspace?`
-                                  );
-                                  if (!ok) return;
-
-                                  try {
-                                    setMembersError(null);
-                                    await removeWorkspaceMember(
-                                      currentWorkspace.id,
-                                      m.userId
-                                    );
-                                    const list = (await getWorkspaceMembers(
-                                      currentWorkspace.id
-                                    )) as Member[];
-                                    setMembers(list);
-                                  } catch (e: unknown) {
-                                    setMembersError(
-                                      e instanceof Error
-                                        ? e.message
-                                        : "No se pudo remover"
-                                    );
-                                  }
-                                }}
-                              >
-                                Remover
-                              </Button>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </Card>
-              )}
-            </TabsContent>
-
-            <TabsContent value="activity" className="space-y-4 pt-4">
-              <Card className="flex flex-col items-center justify-center gap-3 border-dashed p-8 text-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                  <Clock className="h-6 w-6 text-muted-foreground" />
-                </div>
-                <div className="space-y-1">
-                  <p className="font-medium">Próximamente</p>
-                  <p className="text-sm text-muted-foreground">
-                    El registro de actividad estará disponible pronto
+                  <p className="text-xs text-muted-foreground">
+                    Comparte este código para invitar a otros a tu workspace
                   </p>
                 </div>
               </Card>
-            </TabsContent>
-
-            <TabsContent value="join" className="space-y-4 pt-4">
-              {maxReached ? (
-                <Card className="flex flex-col items-center justify-center gap-3 border-dashed p-8 text-center">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                    <Building2 className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="font-medium">Límite alcanzado</p>
-                    <p className="text-sm text-muted-foreground">
-                      Ya tienes 2 workspaces (personal + adicional). Para unirte
-                      a otro, primero elimina o deja el adicional.
-                    </p>
-                  </div>
-                </Card>
-              ) : (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">
-                      Ingresa el código de invitación para unirte a un workspace
-                      existente
-                    </p>
-
-                    <div className="flex gap-2">
-                      <Input
-                        value={joinCode}
-                        onChange={(e) =>
-                          setJoinCode(e.target.value.toUpperCase())
-                        }
-                        placeholder="Ej: ABC123XYZ"
-                        maxLength={12}
-                        className="font-mono uppercase"
-                      />
-                      <Button
-                        onClick={onJoin}
-                        disabled={joining || !joinCode.trim()}
-                        className="gap-2"
-                      >
-                        {joining ? (
-                          <>
-                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-                            Uniendo...
-                          </>
-                        ) : (
-                          <>
-                            <UserPlus className="h-4 w-4" />
-                            Unirme
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-
-                  {joinMsg && (
-                    <Card
-                      className={cn(
-                        "p-3",
-                        joinMsg.startsWith("✅")
-                          ? "border-green-500/50 bg-green-500/10"
-                          : "border-destructive/50 bg-destructive/10"
-                      )}
-                    >
-                      <p className="text-sm">{joinMsg}</p>
-                    </Card>
+            )}
+          {switchingWs ? (
+            <Card className="mt-4 p-6 space-y-3">
+              <div className="h-4 w-40 animate-pulse rounded bg-muted" />
+              <div className="h-10 w-full animate-pulse rounded bg-muted" />
+              <div className="h-10 w-full animate-pulse rounded bg-muted" />
+            </Card>
+          ) : (
+            <>
+              <Tabs value={tab} onValueChange={onTabChange} className="w-full">
+                <TabsList
+                  className={cn(
+                    "grid w-full",
+                    showJoinTab && showMembersTab
+                      ? "grid-cols-3"
+                      : showJoinTab || showMembersTab
+                      ? "grid-cols-2"
+                      : "grid-cols-1"
                   )}
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
+                >
+                  {showJoinTab && (
+                    <TabsTrigger value="join" className="gap-2">
+                      <UserPlus className="h-4 w-4" />
+                      <span className="hidden sm:inline">Unirse</span>
+                    </TabsTrigger>
+                  )}
+
+                  {showMembersTab && (
+                    <TabsTrigger value="members" className="gap-2">
+                      <Users className="h-4 w-4" />
+                      <span className="hidden sm:inline">Miembros</span>
+                    </TabsTrigger>
+                  )}
+
+                  {showActivityTab && (
+                    <TabsTrigger value="activity" className="gap-2">
+                      <Activity className="h-4 w-4" />
+                      <span className="hidden sm:inline">Actividad</span>
+                    </TabsTrigger>
+                  )}
+                </TabsList>
+
+                {/* ✅ MEMBERS reales */}
+                {showMembersTab && (
+                  <TabsContent value="members" className="space-y-4 pt-4">
+                    <Card className="p-4">
+                      {membersLoading ? (
+                        <p className="text-sm text-muted-foreground">
+                          Cargando miembros...
+                        </p>
+                      ) : membersError ? (
+                        <p className="text-sm text-destructive">
+                          {membersError}
+                        </p>
+                      ) : members.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                          No hay miembros.
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {members.map((m) => {
+                            const canRemove =
+                              myRole === "owner"
+                                ? m.role !== "owner" && !m.isYou
+                                : myRole === "admin"
+                                ? m.role === "member" && !m.isYou
+                                : false;
+
+                            return (
+                              <div
+                                key={m.userId}
+                                className="flex items-center justify-between rounded-md border p-3"
+                              >
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-medium">
+                                    {m.name} {m.lastName ?? ""}{" "}
+                                    {m.isYou ? "(tú)" : ""}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {m.role}
+                                  </p>
+                                </div>
+
+                                {canRemove && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      setMemberToRemove(m);
+                                      setRemoveOpen(true);
+                                    }}
+                                  >
+                                    Remover
+                                  </Button>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </Card>
+                  </TabsContent>
+                )}
+
+                {/* ✅ JOIN tab */}
+
+                <TabsContent value="activity" className="space-y-4 pt-4">
+                  <Card className="flex flex-col items-center justify-center gap-3 border-dashed p-8 text-center">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                      <Clock className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="font-medium">Próximamente</p>
+                      <p className="text-sm text-muted-foreground">
+                        El registro de actividad estará disponible pronto
+                      </p>
+                    </div>
+                  </Card>
+                </TabsContent>
+
+                {showJoinTab && (
+                  <TabsContent value="join" className="space-y-4 pt-4">
+                    {maxReached ? (
+                      <Card className="flex flex-col items-center justify-center gap-3 border-dashed p-8 text-center">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                          <Building2 className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                        <div className="space-y-1">
+                          <p className="font-medium">Límite alcanzado</p>
+                          <p className="text-sm text-muted-foreground">
+                            Ya tienes 2 workspaces (personal + adicional). Para
+                            unirte a otro, primero elimina o deja el adicional.
+                          </p>
+                        </div>
+                      </Card>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <p className="text-sm text-muted-foreground">
+                            Ingresa el código de invitación para unirte a un
+                            workspace existente
+                          </p>
+
+                          <div className="flex gap-2">
+                            <Input
+                              value={joinCode}
+                              onChange={(e) =>
+                                setJoinCode(e.target.value.toUpperCase())
+                              }
+                              placeholder="Ej: ABC123XYZ"
+                              maxLength={12}
+                              className="font-mono uppercase"
+                            />
+                            <Button
+                              onClick={onJoin}
+                              disabled={joining || !joinCode.trim()}
+                              className="gap-2"
+                            >
+                              {joining ? (
+                                <>
+                                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                                  Uniendo...
+                                </>
+                              ) : (
+                                <>
+                                  <UserPlus className="h-4 w-4" />
+                                  Unirme
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+
+                        {joinMsg && (
+                          <Card
+                            className={cn(
+                              "p-3",
+                              joinMsg.startsWith("✅")
+                                ? "border-green-500/50 bg-green-500/10"
+                                : "border-destructive/50 bg-destructive/10"
+                            )}
+                          >
+                            <p className="text-sm">{joinMsg}</p>
+                          </Card>
+                        )}
+                      </div>
+                    )}
+                  </TabsContent>
+                )}
+              </Tabs>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -547,6 +608,107 @@ export function WorkspaceModal({
             setJoinMsg("✅ Workspace creado");
           } catch (e: unknown) {
             setJoinMsg(e instanceof Error ? e.message : "No se pudo crear");
+          }
+        }}
+      />
+
+      <ConfirmActionDialog
+        open={leaveOpen}
+        onOpenChange={setLeaveOpen}
+        title="Salir del workspace"
+        description="Perderás acceso a sus tareas, miembros y actividades."
+        confirmText="Sí, salir"
+        cancelText="Cancelar"
+        loading={confirmLoading}
+        onConfirm={async () => {
+          if (!currentWorkspaceId) return;
+
+          try {
+            setConfirmLoading(true);
+            await leaveWorkspace(currentWorkspaceId);
+            await refreshWorkspaces();
+            setJoinMsg("✅ Saliste del workspace");
+            setLeaveOpen(false);
+          } catch (e: unknown) {
+            setJoinMsg(e instanceof Error ? e.message : "No se pudo salir");
+          } finally {
+            setConfirmLoading(false);
+          }
+        }}
+      />
+
+      <ConfirmActionDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Eliminar workspace"
+        description="Se borrarán miembros y tareas. Esta acción no se puede deshacer."
+        confirmText="Sí, eliminar"
+        cancelText="Cancelar"
+        variant="destructive"
+        loading={confirmLoading}
+        onConfirm={async () => {
+          if (!currentWorkspaceId) return;
+
+          try {
+            setConfirmLoading(true);
+            await deleteWorkspace(currentWorkspaceId);
+            await refreshWorkspaces();
+            setJoinMsg("✅ Workspace eliminado");
+            setDeleteOpen(false);
+            onOpenChange(false);
+          } catch (e: unknown) {
+            setJoinMsg(e instanceof Error ? e.message : "No se pudo eliminar");
+          } finally {
+            setConfirmLoading(false);
+          }
+        }}
+      />
+
+      <ConfirmActionDialog
+        open={removeOpen}
+        onOpenChange={(v) => {
+          setRemoveOpen(v);
+          if (!v) setMemberToRemove(null);
+        }}
+        title="Remover miembro"
+        description={
+          memberToRemove
+            ? `¿Seguro que quieres remover a ${memberToRemove.name}${
+                memberToRemove.lastName ? ` ${memberToRemove.lastName}` : ""
+              } del workspace?`
+            : "¿Seguro que quieres remover a este miembro?"
+        }
+        confirmText="Sí, remover"
+        cancelText="Cancelar"
+        variant="destructive"
+        loading={confirmLoading}
+        onConfirm={async () => {
+          if (!memberToRemove) return;
+          if (!currentWorkspaceId) return;
+
+          try {
+            setConfirmLoading(true);
+            setMembersError(null);
+
+            await removeWorkspaceMember(
+              currentWorkspaceId,
+              memberToRemove.userId
+            );
+
+            // refresca lista de miembros
+            const list = (await getWorkspaceMembers(
+              currentWorkspaceId
+            )) as Member[];
+            setMembers(Array.isArray(list) ? list : []);
+
+            setRemoveOpen(false);
+            setMemberToRemove(null);
+          } catch (e: unknown) {
+            setMembersError(
+              e instanceof Error ? e.message : "No se pudo remover"
+            );
+          } finally {
+            setConfirmLoading(false);
           }
         }}
       />
