@@ -1,3 +1,5 @@
+"use client";
+
 import { LayoutGrid } from "lucide-react";
 import type { Task } from "../app/types/types";
 import TaskItem from "./TaskItem";
@@ -19,6 +21,24 @@ type Props = {
   meId?: string | null;
 };
 
+function sortTasks(tasks: Task[]): Task[] {
+  const incomplete = tasks.filter((task) => !task.completed);
+  const complete = tasks.filter((task) => task.completed);
+
+  const sortByDate = (a: Task, b: Task) => {
+    const dateA =
+      a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+    const dateB =
+      b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
+    return dateA.getTime() - dateB.getTime(); // Oldest first
+  };
+
+  incomplete.sort(sortByDate);
+  complete.sort(sortByDate);
+
+  return [...incomplete, ...complete];
+}
+
 export default function TaskList({
   tasks,
   toggleTask,
@@ -27,15 +47,16 @@ export default function TaskList({
   isPersonalWorkspace,
   meId,
 }: Props) {
+  const sortedTasks = sortTasks(tasks);
+
   return (
     <div className="space-y-2 min-h-[300px]">
-      {tasks.map((task) => (
+      {sortedTasks.map((task) => (
         <TaskItem
           key={task.id}
           task={task}
           onToggle={() => toggleTask(task.id)}
           onDelete={() => deleteTask(task.id)}
-          // ✅ PASARLOS
           members={members}
           isPersonalWorkspace={isPersonalWorkspace}
           meId={meId}

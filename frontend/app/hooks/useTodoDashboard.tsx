@@ -33,6 +33,7 @@ function normalizeTasks(data: BackendTask[]): Task[] {
     ...t,
     createdAt: new Date(t.createdAt),
     updatedAt: t.updatedAt ? new Date(t.updatedAt) : undefined,
+    dueDate: t.dueDate ? new Date(t.dueDate) : null, // ✅ AÑADIR
   }));
 }
 
@@ -69,6 +70,8 @@ export function useTodoDashboard() {
   // loader switching workspace
   const [isWorkspaceSwitching, setIsWorkspaceSwitching] = useState(false);
   const timerRef = useRef<number | null>(null);
+
+  const myUserId = currentWorkspace?.isPersonal ? meIdFromAuth : meId;
 
   useEffect(() => {
     setIsWorkspaceSwitching(true);
@@ -249,11 +252,7 @@ export function useTodoDashboard() {
 
       const created = data as BackendTask;
 
-      const task: Task = {
-        ...created,
-        createdAt: new Date(created.createdAt),
-        updatedAt: created.updatedAt ? new Date(created.updatedAt) : undefined,
-      };
+      const [task] = normalizeTasks([created]);
 
       setTasks((prev) => [task, ...prev]);
 
@@ -344,6 +343,13 @@ export function useTodoDashboard() {
       ? Math.round((completedCount / filteredTasks.length) * 100)
       : 0;
 
+  const userActiveCount = filteredTasks.filter((t) => {
+    if (t.completed) return false;
+    if (!myUserId) return false;
+    const ids = Array.isArray(t.assignees) ? t.assignees : [];
+    return ids.includes(myUserId);
+  }).length;
+
   return {
     // data
     tasks,
@@ -351,6 +357,7 @@ export function useTodoDashboard() {
     newTask,
     activeFilter,
     selectedDate,
+    userActiveCount,
     priority,
 
     activeCount,

@@ -1,7 +1,7 @@
 // src/features/todo/components/TaskItem.tsx
 "use client";
 
-import { Check, Trash2, Users } from "lucide-react";
+import { Calendar, Check, Clock, Flag, Trash2, Users } from "lucide-react";
 import type React from "react";
 import type { Task } from "../app/types/types";
 
@@ -95,10 +95,17 @@ export default function TaskItem({
 
   const priorityClasses =
     task.priority === "low"
-      ? "text-yellow-300 border-500/40"
+      ? "text-blue-400 bg-blue-500/10 border-blue-500/30"
       : task.priority === "medium"
-      ? "text-orange-300 border-500/40"
-      : "text-red-300 border-500/40";
+      ? "text-amber-400 bg-amber-500/10 border-amber-500/30"
+      : "text-red-400 bg-red-500/10 border-red-500/30";
+
+  const priorityIconColor =
+    task.priority === "low"
+      ? "text-blue-400"
+      : task.priority === "medium"
+      ? "text-amber-400"
+      : "text-red-400";
 
   const assigneeLabels = getAssigneeLabels(
     task.assignees,
@@ -109,6 +116,14 @@ export default function TaskItem({
 
   const createdAtDate =
     task.createdAt instanceof Date ? task.createdAt : new Date(task.createdAt);
+
+  const dueDateObj = task.dueDate
+    ? task.dueDate instanceof Date
+      ? task.dueDate
+      : new Date(task.dueDate)
+    : null;
+
+  const isOverdue = dueDateObj && !task.completed && dueDateObj < new Date();
 
   return (
     <div
@@ -144,39 +159,54 @@ export default function TaskItem({
           {task.text}
         </p>
 
-        <div className="flex items-center gap-2 mt-1 flex-wrap">
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary border border-border text-muted-foreground uppercase tracking-wider">
-            {task.category}
-          </span>
-
+        <div className="flex items-center gap-3 mt-2 flex-wrap">
+          {/* Priority with icon */}
           <span
-            className={`text-[10px] px-2 py-0.5 rounded-full border uppercase tracking-wider ${priorityClasses}`}
+            className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full border font-medium ${priorityClasses}`}
           >
+            <Flag className={`w-3 h-3 ${priorityIconColor}`} />
             {priorityLabel}
           </span>
 
+          {/* Assignees with icon */}
           {assigneeLabels.length > 0 && (
-            <span className="flex items-center gap-1 text-[10px] text-muted-foreground/70">
-              <Users className="w-3 h-3 opacity-70" />
-              <span className="flex flex-wrap gap-1">
-                {assigneeLabels.map((label) => (
-                  <span
-                    key={label}
-                    className="px-2 py-0.5 rounded-full bg-secondary border border-border"
-                  >
+            <span className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full bg-secondary/80 border border-border text-muted-foreground">
+              <Users className="w-3 h-3" />
+              <span className="flex items-center gap-1">
+                {assigneeLabels.map((label, idx) => (
+                  <span key={label}>
                     {label}
+                    {idx < assigneeLabels.length - 1 && ","}
                   </span>
                 ))}
               </span>
             </span>
           )}
 
-          <span className="text-[10px] text-muted-foreground/50">
+          {/* Created time with icon */}
+          <span className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full bg-secondary/60 border border-border/50 text-muted-foreground/70">
+            <Clock className="w-3 h-3" />
             {createdAtDate.toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
             })}
           </span>
+
+          {dueDateObj && (
+            <span
+              className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full border font-medium ${
+                isOverdue
+                  ? "text-red-400 bg-red-500/10 border-red-500/30"
+                  : "text-emerald-400 bg-emerald-500/10 border-emerald-500/30"
+              }`}
+            >
+              <Calendar className="w-3 h-3" />
+              {dueDateObj.toLocaleDateString([], {
+                month: "short",
+                day: "numeric",
+              })}
+            </span>
+          )}
         </div>
       </div>
 

@@ -8,7 +8,8 @@ export interface BackendTask {
   priority: Priority;
   category: string;
   createdAt: string;
-  updatedAt?: string; // opcional, igual que en el backend
+  updatedAt?: string;
+  dueDate?: string | null; // ✅ AÑADIR
   assignees: string[];
 }
 
@@ -20,5 +21,6 @@ export interface Task {
   category: string;
   createdAt: Date;
   updatedAt?: Date;
+  dueDate?: Date | null; // ✅ AÑADIR
   assignees?: string[];
 }

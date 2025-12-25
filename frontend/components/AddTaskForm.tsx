@@ -329,7 +329,7 @@ export default function AddTaskForm({
                   onClick={toggleAll}
                   className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors ${
                     isAllSelected
-                      ? "bg-primary text-primary-foreground"
+                      ? "bg-white/80 text-black"
                       : "hover:bg-secondary"
                   }`}
                 >
@@ -351,7 +351,7 @@ export default function AddTaskForm({
                         onClick={() => toggleAssignee(m.id)}
                         className={`w-full flex items-center justify-between my-1 px-3 py-2 rounded-md text-sm transition-colors ${
                           checked
-                            ? "bg-primary text-primary-foreground"
+                            ? "bg-white/80 text-primary-foreground"
                             : "hover:bg-secondary"
                         }`}
                       >

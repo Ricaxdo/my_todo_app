@@ -35,6 +35,7 @@ export default function TodoDashboard() {
     setAssignees,
     isPersonalWorkspace,
     meId,
+    userActiveCount,
   } = useTodoDashboard();
 
   const assigneeMembers = useMemo(
@@ -95,6 +96,7 @@ export default function TodoDashboard() {
             <section id="progress">
               <TodoStats
                 activeCount={activeCount}
+                userActiveCount={userActiveCount}
                 completionRate={completionRate}
                 selectedDate={selectedDate}
                 onChangeDate={setSelectedDate}
