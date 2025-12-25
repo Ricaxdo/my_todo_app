@@ -118,8 +118,9 @@ export async function createTask(
         ...(priority !== undefined ? { priority } : {}),
         ...(category !== undefined ? { category } : {}),
         ...(dueDate ? { dueDate } : {}),
+        ...(Array.isArray(assignees) && assignees.length ? { assignees } : {}), // ✅ AQUÍ
       },
-      tz // ✅ argumento extra
+      tz
     );
 
     return res.status(201).json(created);

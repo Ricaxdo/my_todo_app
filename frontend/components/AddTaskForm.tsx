@@ -119,45 +119,44 @@ export default function AddTaskForm({
     if (dueDateOption === "week") return "1 Semana";
     return format(customDate, "d MMM", { locale: es });
   };
-
   // ============================
   // ✅ TODOS (assignees) - robusto
   // ============================
-  const allMemberIds = useMemo(() => {
-    // members trae ids de usuarios (tu m.id debe ser userId)
-    const ids = members.map((m) => m.id);
+  const allAssigneeIds = useMemo(() => {
+    const ids = new Set<string>();
 
-    // por si members no incluye al creador, lo agregamos
-    const set = new Set<string>([...ids, meId]);
+    for (const m of members) ids.add(m.id); // m.id = userId
+    if (meId) ids.add(meId); // por si tú no vienes en members
 
-    return Array.from(set);
+    return Array.from(ids);
   }, [members, meId]);
 
   const isAllSelected = useMemo(() => {
     if (isPersonalWorkspace) return false;
-    if (allMemberIds.length === 0) return false;
-
-    // ✅ all selected si están TODOS los ids incluidos
-    return allMemberIds.every((id) => assignees.includes(id));
-  }, [isPersonalWorkspace, allMemberIds, assignees]);
+    if (allAssigneeIds.length === 0) return false;
+    return allAssigneeIds.every((id) => assignees.includes(id));
+  }, [isPersonalWorkspace, allAssigneeIds, assignees]);
 
   const toggleAll = () => {
     if (isPersonalWorkspace) return;
-
-    setAssignees(() => {
-      // si ya están todos => vuelve a solo yo
-      return isAllSelected ? [meId] : allMemberIds;
-    });
+    setAssignees(isAllSelected ? [meId] : allAssigneeIds);
   };
 
   const toggleAssignee = (id: string) => {
     if (isPersonalWorkspace) return;
 
     setAssignees((prev) => {
+      // si estaba "Todos", rompe el "Todos" y quita/ajusta
+      if (isAllSelected) {
+        const next = allAssigneeIds.filter((x) => x !== id);
+        return next.length ? next : [meId];
+      }
+
       if (prev.includes(id)) {
         const next = prev.filter((x) => x !== id);
         return next.length ? next : [meId];
       }
+
       return [...prev, id];
     });
   };

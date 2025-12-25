@@ -9,6 +9,7 @@ export interface BackendTask {
   category: string;
   createdAt: string;
   updatedAt?: string; // opcional, igual que en el backend
+  assignees: string[];
 }
 
 export interface Task {

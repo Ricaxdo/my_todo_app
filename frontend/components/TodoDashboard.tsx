@@ -46,9 +46,6 @@ export default function TodoDashboard() {
     [members]
   );
 
-  console.log("DASH members:", members);
-  console.log("DASH isPersonal:", isPersonalWorkspace, "meId:", meId);
-
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/20">
       <div className="fixed inset-0 bg-grid-white pointer-events-none opacity-[0.05]" />

@@ -48,11 +48,12 @@ export async function createWorkspaceTodo(
 
     const { workspaceId } = req.params as { workspaceId: string };
 
-    const { text, priority, category, dueDate } = req.body as {
+    const { text, priority, category, dueDate, assignees } = req.body as {
       text?: string;
       priority?: "low" | "medium" | "high";
       category?: string;
       dueDate?: string;
+      assignees?: string[];
     };
 
     if (!text || typeof text !== "string" || !text.trim()) {
@@ -70,6 +71,7 @@ export async function createWorkspaceTodo(
       ...(priority !== undefined ? { priority } : {}),
       ...(category !== undefined ? { category } : {}),
       ...(dueDate ? { dueDate } : {}),
+      ...(Array.isArray(assignees) && assignees.length ? { assignees } : {}), // ✅ AQUÍ
     });
 
     return res.status(201).json(created);

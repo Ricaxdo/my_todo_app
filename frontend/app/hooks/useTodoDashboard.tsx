@@ -248,6 +248,7 @@ export function useTodoDashboard() {
       }
 
       const created = data as BackendTask;
+
       const task: Task = {
         ...created,
         createdAt: new Date(created.createdAt),

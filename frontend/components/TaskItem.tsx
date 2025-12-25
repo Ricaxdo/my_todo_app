@@ -110,9 +110,6 @@ export default function TaskItem({
   const createdAtDate =
     task.createdAt instanceof Date ? task.createdAt : new Date(task.createdAt);
 
-  console.log("task.assignees:", task.assignees);
-  console.log("members passed:", members);
-
   return (
     <div
       className={`group flex items-center gap-4 p-4 rounded-xl border bg-card/50 hover:bg-secondary/50 transition-all duration-200 animate-in fade-in slide-in-from-bottom-2 cursor-pointer

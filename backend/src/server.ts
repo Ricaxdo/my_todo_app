@@ -18,6 +18,7 @@ app.use(express.json());
 
 app.use("/", rootRouter);
 app.use("/todos", taskRoutes); // compat personal
+
 app.use("/workspaces", workspaceRoutes);
 app.use("/workspaces", workspaceTodosRoutes); // shared by workspace
 app.use("/auth", authRouter);
