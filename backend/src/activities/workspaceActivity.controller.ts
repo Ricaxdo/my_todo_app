@@ -13,14 +13,14 @@ export async function getWorkspaceActivity(
     const { limit, before } = req.query as { limit?: string; before?: string };
 
     const parsedLimit = limit ? Number(limit) : NaN;
+    const cleanBefore =
+      typeof before === "string" && before.trim() ? before.trim() : null;
 
-    const params: { workspaceId: string; limit?: number; before?: string } = {
+    const params = {
       workspaceId,
+      ...(Number.isFinite(parsedLimit) ? { limit: parsedLimit } : {}),
+      ...(cleanBefore ? { before: cleanBefore } : {}),
     };
-
-    if (Number.isFinite(parsedLimit)) params.limit = parsedLimit;
-    if (typeof before === "string" && before.trim())
-      params.before = before.trim();
 
     const data = await listWorkspaceActivity(params);
     return res.json(data);

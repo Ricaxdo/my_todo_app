@@ -11,12 +11,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useWorkspaceActivity } from "@/features/workspaces/useWorkspaceActivity";
 import { cn } from "@/lib/utils";
 import {
   Activity,
   Building2,
   Check,
-  Clock,
   Copy,
   Sparkles,
   UserPlus,
@@ -26,6 +26,10 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ConfirmActionDialog } from "./ConfirmActionDialog";
 import { CreateWorkspaceModal } from "./CreateWorkspaceModal";
 import { useWorkspaces } from "./workspace-context";
+
+import { formatActivity } from "@/features/workspaces/activity.format";
+import { formatDistanceToNow } from "date-fns";
+import { es } from "date-fns/locale";
 
 type Role = "owner" | "admin" | "member";
 
@@ -90,6 +94,14 @@ export function WorkspaceModal({
 
   const [switchingWs, setSwitchingWs] = useState(false);
   const switchTimerRef = useRef<number | null>(null);
+
+  const activityEnabled =
+    open && tab === "activity" && Boolean(currentWorkspaceId);
+
+  const activity = useWorkspaceActivity({
+    workspaceId: currentWorkspaceId,
+    enabled: activityEnabled,
+  });
 
   const myRole = useMemo<Role | undefined>(() => {
     const me = members.find((m) => m.isYou);
@@ -188,7 +200,7 @@ export function WorkspaceModal({
   if (!currentWorkspace) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-[calc(100vw-24px)] sm:max-w-[600px] max-h-[85vh] overflow-y-auto gap-6">
+        <DialogContent className="w-[calc(100vw-24px)] sm:max-w-[600px] max-h-[85vh] overflow-hidden gap-6">
           <DialogHeader>
             <DialogTitle>Workspace</DialogTitle>
           </DialogHeader>
@@ -509,16 +521,55 @@ export function WorkspaceModal({
                 {/* ✅ JOIN tab */}
 
                 <TabsContent value="activity" className="space-y-4 pt-4">
-                  <Card className="flex flex-col items-center justify-center gap-3 border-dashed p-8 text-center">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                      <Clock className="h-6 w-6 text-muted-foreground" />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="font-medium">Próximamente</p>
+                  <Card className="p-4">
+                    {activity.isLoading ? (
                       <p className="text-sm text-muted-foreground">
-                        El registro de actividad estará disponible pronto
+                        Cargando actividad...
                       </p>
-                    </div>
+                    ) : activity.error ? (
+                      <p className="text-sm text-destructive">
+                        {activity.error}
+                      </p>
+                    ) : activity.items.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        Aún no hay actividad.
+                      </p>
+                    ) : (
+                      <>
+                        {/* ✅ SOLO ESTA SECCIÓN SCROLLEA */}
+                        <div className="max-h-[360px] overflow-y-auto pr-2 space-y-2">
+                          {activity.items.map((it) => (
+                            <div key={it.id} className="rounded-md border p-3">
+                              <p className="text-sm font-medium">
+                                {formatActivity(it)}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {formatDistanceToNow(new Date(it.createdAt), {
+                                  addSuffix: true,
+                                  locale: es,
+                                })}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Load more queda FUERA del scroll */}
+                        {activity.hasMore && (
+                          <div className="mt-3">
+                            <Button
+                              variant="outline"
+                              className="w-full"
+                              onClick={activity.loadMore}
+                              disabled={activity.isLoadingMore}
+                            >
+                              {activity.isLoadingMore
+                                ? "Cargando..."
+                                : "Cargar más"}
+                            </Button>
+                          </div>
+                        )}
+                      </>
+                    )}
                   </Card>
                 </TabsContent>
 
