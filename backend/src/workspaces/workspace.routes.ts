@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { auth } from "../middleware/auth";
 
+import { getWorkspaceActivity } from "../activities/workspaceActivity.controller";
+
 import {
   createWorkspace,
   joinWorkspace,
@@ -34,6 +36,12 @@ workspaceRoutes.get(
   "/:workspaceId/members",
   requireWorkspaceMember,
   getWorkspaceMembers
+);
+
+workspaceRoutes.get(
+  "/:workspaceId/activity",
+  requireWorkspaceMember,
+  getWorkspaceActivity
 );
 
 // remover miembro (owner/admin)
