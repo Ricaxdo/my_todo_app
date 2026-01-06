@@ -63,12 +63,16 @@ function getAssigneeLabels(
     .filter((m): m is AssigneeMember => Boolean(m))
     .map((m) => {
       if (m.isYou) return "Tú";
-      const full = `${m.name}${m.lastName ? ` ${m.lastName}` : ""}`.trim();
-      return full ? toTitleCase(full) : "Asignado";
+
+      // ✅ solo primer nombre (m.name podría traer "Juan Pablo")
+      const firstName = (m.name ?? "").trim().split(/\s+/)[0] ?? "";
+      return firstName ? toTitleCase(firstName) : "Asignado";
     });
 
   if (labels.length === 0 && ids.length > 0) return ["Asignado"];
-  return labels;
+
+  // ✅ solo 1 label
+  return labels.slice(0, 1);
 }
 
 export default function TaskItem({
@@ -150,7 +154,7 @@ export default function TaskItem({
 
       <div className="flex-1 min-w-0">
         <p
-          className={`text-sm md:text-base font-medium truncate transition-all ${
+          className={`text-lg md:text-base  font-medium truncate transition-all ${
             task.completed
               ? "text-muted-foreground line-through"
               : "text-foreground"
@@ -162,7 +166,7 @@ export default function TaskItem({
         <div className="flex items-center gap-3 mt-2 flex-wrap">
           {/* Priority with icon */}
           <span
-            className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full border font-medium ${priorityClasses}`}
+            className={`flex items-center gap-1.5 text-[11px] max-[349px]:text-[9px] px-2.5 py-1 rounded-full border font-medium ${priorityClasses}`}
           >
             <Flag className={`w-3 h-3 ${priorityIconColor}`} />
             {priorityLabel}
@@ -170,21 +174,14 @@ export default function TaskItem({
 
           {/* Assignees with icon */}
           {assigneeLabels.length > 0 && (
-            <span className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full bg-secondary/80 border border-border text-muted-foreground">
+            <span className="flex items-center gap-1.5 text-[11px] max-[349px]:text-[9px] px-2.5 py-1 rounded-full bg-secondary/80 border border-border text-muted-foreground">
               <Users className="w-3 h-3" />
-              <span className="flex items-center gap-1">
-                {assigneeLabels.map((label, idx) => (
-                  <span key={label}>
-                    {label}
-                    {idx < assigneeLabels.length - 1 && ","}
-                  </span>
-                ))}
-              </span>
+              <span className="truncate">{assigneeLabels[0]}</span>
             </span>
           )}
 
           {/* Created time with icon */}
-          <span className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full bg-secondary/60 border border-border/50 text-muted-foreground/70">
+          <span className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 max-[349px]:text-[9px] rounded-full bg-secondary/60 border border-border/50 text-muted-foreground/70">
             <Clock className="w-3 h-3" />
             {createdAtDate.toLocaleTimeString([], {
               hour: "2-digit",
@@ -194,7 +191,7 @@ export default function TaskItem({
 
           {dueDateObj && (
             <span
-              className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full border font-medium ${
+              className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 max-[349px]:text-[9px] rounded-full border font-medium ${
                 isOverdue
                   ? "text-red-400 bg-red-500/10 border-red-500/30"
                   : "text-emerald-400 bg-emerald-500/10 border-emerald-500/30"

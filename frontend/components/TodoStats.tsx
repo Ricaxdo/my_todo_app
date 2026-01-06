@@ -190,10 +190,10 @@ export default function TodoStats({
         <DialogContent className="w-auto p-6">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">
-              Select a date
+              Seleccciona una fecha{" "}
             </DialogTitle>
             <DialogDescription className="text-base">
-              Filter your tasks by day to focus on what matters.
+              Filtra tus tareas por día para enfocarte en lo que importa.
             </DialogDescription>
           </DialogHeader>
 

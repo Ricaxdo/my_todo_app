@@ -188,7 +188,7 @@ export default function AddTaskForm({
             type="text"
             value={newTask}
             onChange={(e) => setNewTask(e.target.value)}
-            placeholder="Add a new task..."
+            placeholder="Crea una nueva tarea"
             className="flex-1 min-w-0 bg-transparent border-none outline-none text-lg placeholder:text-muted-foreground/50 h-10"
           />
         </div>
@@ -219,7 +219,7 @@ export default function AddTaskForm({
                   key={level}
                   type="button"
                   onClick={() => setPriority(level)}
-                  className={`relative z-10 flex-1 text-xs font-medium py-2 text-center transition-colors ${
+                  className={`relative z-10 flex-1 text-xs  font-medium py-2 text-center transition-colors ${
                     isActive ? activeColor : "text-muted-foreground/60"
                   }`}
                 >
@@ -234,7 +234,7 @@ export default function AddTaskForm({
             <PopoverTrigger asChild>
               <button
                 type="button"
-                className="flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/60 border border-border/40 hover:border-border transition-all text-sm font-medium text-foreground/80 hover:text-foreground shrink-0"
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/60 border border-border/40 hover:border-border transition-all text-sm max-[349px]:text-xs font-medium text-foreground/80 hover:text-foreground shrink-0"
               >
                 <CalendarIcon className="w-4 h-4" />
                 <span>{getDateButtonText()}</span>
@@ -310,7 +310,7 @@ export default function AddTaskForm({
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/60 border border-border/40 hover:border-border transition-all text-sm font-medium text-foreground/80 hover:text-foreground shrink-0"
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/60 border border-border/40 hover:border-border transition-all text-sm max-[349px]:text-xs font-medium text-foreground/80 hover:text-foreground shrink-0"
                 >
                   <Users className="w-4 h-4" />
                   <span>{assigneeLabel}</span>

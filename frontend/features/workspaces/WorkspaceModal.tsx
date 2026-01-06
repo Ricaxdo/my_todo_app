@@ -188,7 +188,7 @@ export function WorkspaceModal({
   if (!currentWorkspace) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="w-[calc(100vw-24px)] sm:max-w-[600px] max-h-[85vh] overflow-y-auto gap-6">
           <DialogHeader>
             <DialogTitle>Workspace</DialogTitle>
           </DialogHeader>
@@ -246,58 +246,59 @@ export function WorkspaceModal({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[600px] gap-6">
+        <DialogContent className="w-[calc(100vw-24px)] sm:max-w-[600px] max-h-[85vh] overflow-y-auto gap-6">
           <DialogHeader>
+            {/* fila 1: icon + title */}
             <div className="flex items-start gap-3">
               <div className="flex h-13 w-13 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <Building2 className="h-6 w-6" />
               </div>
 
-              <div className="flex-1">
-                <DialogTitle className="flex items-center gap-2 text-xl">
+              <div className="flex-1 min-w-0">
+                <DialogTitle className="flex items-center gap-2 text-xl truncate">
                   {workspace.name}
                 </DialogTitle>
                 <DialogDescription>
                   Gestiona tu workspace y colabora con tu equipo
                 </DialogDescription>
               </div>
-
-              {/* ✅ Acciones pro (solo shared) */}
-              {canShowActions && (
-                <div className="flex items-center gap-2 mr-5 mt-3">
-                  {/* si NO eres owner => puedes salir */}
-                  {myRole && myRole !== "owner" && (
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      onClick={() => setLeaveOpen(true)}
-                    >
-                      Abandonar
-                    </Button>
-                  )}
-
-                  {/* si eres owner => puedes eliminar */}
-                  {myRole === "owner" && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => setDeleteOpen(true)}
-                    >
-                      Eliminar workspace
-                    </Button>
-                  )}
-                </div>
-              )}
             </div>
+
+            {/* fila 2: acciones */}
+            {canShowActions && (
+              <div className="mt-3 flex flex-col sm:flex-row sm:justify-end gap-2">
+                {myRole && myRole !== "owner" && (
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => setLeaveOpen(true)}
+                    className="w-full sm:w-auto"
+                  >
+                    Abandonar
+                  </Button>
+                )}
+
+                {myRole === "owner" && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setDeleteOpen(true)}
+                    className="w-full sm:w-auto"
+                  >
+                    Eliminar workspace
+                  </Button>
+                )}
+              </div>
+            )}
           </DialogHeader>
 
           <div className="space-y-3">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-row sm:flex-row sm:items-center gap-2">
               <Sparkles className="h-4 w-4 text-muted-foreground" />
               <p className="text-sm font-medium">Tus Workspaces</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-2">
               {workspaces.map((w) => (
                 <Card
                   key={w.id}
@@ -366,13 +367,13 @@ export function WorkspaceModal({
             canSeeInviteCode && (
               <Card className="border-dashed bg-muted/30 p-4">
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-row sm:flex-row sm:items-center gap-2">
                     <UserPlus className="h-4 w-4 text-muted-foreground" />
                     <p className="text-sm font-medium">Código de invitación</p>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 rounded-md bg-background px-3 py-2 font-mono text-sm font-semibold tracking-wider">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <code className="min-w-0 w-full sm:flex-1 break-all rounded-md bg-background px-3 py-2 font-mono text-sm font-semibold tracking-wider">
                       {workspace.inviteCode}
                     </code>
 
@@ -544,7 +545,7 @@ export function WorkspaceModal({
                             workspace existente
                           </p>
 
-                          <div className="flex gap-2">
+                          <div className="flex flex-col sm:flex-row gap-2">
                             <Input
                               value={joinCode}
                               onChange={(e) =>
@@ -557,7 +558,7 @@ export function WorkspaceModal({
                             <Button
                               onClick={onJoin}
                               disabled={joining || !joinCode.trim()}
-                              className="gap-2"
+                              className="w-full sm:w-auto gap-2"
                             >
                               {joining ? (
                                 <>

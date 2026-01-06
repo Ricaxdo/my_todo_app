@@ -258,7 +258,7 @@ export function CreateWorkspaceModal({
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Ícono</p>
 
-                  <div className="grid grid-cols-8 gap-2">
+                  <div className="grid grid-cols-5 min-[420px]:grid-cols-6 sm:grid-cols-8 gap-2 place-items-center">
                     {ICONS.map((it) => {
                       const selected = it.id === iconId;
                       return (

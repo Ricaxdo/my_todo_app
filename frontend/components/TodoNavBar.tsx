@@ -70,7 +70,6 @@ export default function TodoNavBar() {
   const { workspaces, currentWorkspaceId, setCurrentWorkspaceId } =
     useWorkspaces();
 
-  // ✅ estado del modal
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
 
   const handleLogout = () => {
@@ -82,7 +81,6 @@ export default function TodoNavBar() {
   const displayName =
     user?.name?.trim() || (user?.email ? user.email.split("@")[0] : "Cuenta");
 
-  // ✅ derivados de workspaces
   const personalWs = useMemo(
     () => workspaces.find((w) => w.isPersonal),
     [workspaces]
@@ -98,88 +96,134 @@ export default function TodoNavBar() {
   const switchWorkspace = (id: string) => {
     if (id === currentWorkspaceId) return;
     setCurrentWorkspaceId(id);
-    // opcional: sentirlo como "Home"
     scrollToId("home", 600, 12);
   };
 
+  const currentWs = useMemo(() => {
+    if (!hasTwo || !personalWs || !extraWs) return null;
+    return isActive(extraWs.id) ? extraWs : personalWs;
+  }, [hasTwo, personalWs, extraWs, currentWorkspaceId]);
+
+  const otherWs = useMemo(() => {
+    if (!hasTwo || !personalWs || !extraWs) return null;
+    return isActive(extraWs.id) ? personalWs : extraWs;
+  }, [hasTwo, personalWs, extraWs, currentWorkspaceId]);
+
+  const toggleWorkspace = () => {
+    if (!otherWs) return;
+    switchWorkspace(otherWs.id);
+  };
+
   return (
-    <nav className="flex items-center gap-0">
+    <nav className="flex flex-wrap items-center gap-2">
       {/* ✅ IMPORTANT: renderiza el modal aquí */}
       <WorkspaceModal open={workspaceOpen} onOpenChange={setWorkspaceOpen} />
 
       {/* Logo */}
-      <div className="flex items-center gap-2">
-        <span className="font-semibold text-lg tracking-tight">StaiFocus</span>
+      <div className="flex items-center gap-2 shrink-0">
+        <span className="font-semibold text-lg tracking-tight hidden max-[350px]:inline">
+          SF
+        </span>
+        <span className="font-semibold text-lg tracking-tight inline max-[350px]:hidden">
+          StaiFocus
+        </span>
       </div>
 
-      <div className="flex items-center justify-end gap-2 md:gap-5 md:pr-10 w-full mr-[-25px]">
+      {/* Acciones (centro) */}
+      <div className="flex items-center justify-end gap-0 md:gap-0 md:pr-0 flex-1 min-w-0">
         <Button
           variant="ghost"
           onClick={() => scrollToId("progress", 1000, 12)}
-          className="max-[500px]:px-2"
+          className=""
         >
-          <BarChart3 className="hidden max-[500px]:block h-5 w-5" />
-          <span className="max-[500px]:hidden">Progress</span>
+          <BarChart3 className="block sm:hidden h-5 w-5" />
+          <span className="hidden sm:inline">Progress</span>
           <span className="sr-only">Progress</span>
         </Button>
 
         <Button
           variant="ghost"
           onClick={() => scrollToId("tasks-anchor", 1000, 12)}
-          className="max-[500px]:px-2"
+          className="px-2 sm:px-3"
         >
-          <ListChecks className="hidden max-[500px]:block h-5 w-5" />
-          <span className="max-[500px]:hidden">Tasks</span>
+          <ListChecks className="block sm:hidden h-5 w-5" />
+          <span className="hidden sm:inline">Tasks</span>
           <span className="sr-only">Tasks</span>
         </Button>
 
         {/* ✅ HOME / WORKSPACE SWITCH */}
         {hasTwo && personalWs && extraWs ? (
-          <div className="relative flex items-center rounded-xl border border-border bg-muted/30 p-1 w-[240px] max-[500px]:w-[200px]">
-            <div
-              className={cn(
-                "absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-lg bg-background shadow-sm",
-                "transition-transform duration-800 [transition-timing-function:cubic-bezier(.2,.9,.2,1.1)]",
-                isActive(extraWs.id) ? "translate-x-full" : "translate-x-0"
-              )}
-            />
+          <>
+            {/* ✅ MOBILE (<450px): 1 solo workspace, click = toggle */}
+            <div className="hidden max-[499px]:block w-[76px] order-3">
+              <button
+                type="button"
+                onClick={toggleWorkspace}
+                className={cn(
+                  "w-[76px] flex items-center justify-center text-center",
+                  "rounded-xl border border-border bg-muted/30 px-3 py-2",
+                  "text-[13px] font-semibold",
+                  "hover:bg-muted/50 active:scale-[0.99] transition"
+                )}
+              >
+                <span className="truncate">
+                  {currentWs?.name ?? "Workspace"}
+                </span>
+              </button>
+            </div>
 
-            <button
-              type="button"
-              onClick={() => switchWorkspace(personalWs.id)}
-              className={cn(
-                "relative z-10 flex-1 px-3 py-2 text-sm font-medium rounded-lg",
-                "transition-colors duration-200",
-                isActive(personalWs.id)
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <span className="truncate block">{personalWs.name}</span>
-            </button>
+            {/* ✅ DESKTOP (>=550px): tu switch segmentado normal */}
+            <div className="hidden min-[500px]:block">
+              <div
+                className="relative flex items-center rounded-xl border border-border bg-muted/30 p-1
+  w-[100px] min-[500px]:w-[240px]"
+              >
+                <div
+                  className={cn(
+                    "absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-lg bg-background shadow-sm",
+                    "transition-transform duration-700 [transition-timing-function:cubic-bezier(.2,.9,.2,1.1)]",
+                    isActive(extraWs.id) ? "translate-x-full" : "translate-x-0"
+                  )}
+                />
 
-            <button
-              type="button"
-              onClick={() => switchWorkspace(extraWs.id)}
-              className={cn(
-                "relative z-10 flex-1 px-3 py-2 text-sm font-medium rounded-lg",
-                "transition-colors duration-200",
-                isActive(extraWs.id)
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <span className="truncate block">{extraWs.name}</span>
-            </button>
-          </div>
+                <button
+                  type="button"
+                  onClick={() => switchWorkspace(personalWs.id)}
+                  className={cn(
+                    "relative z-10 flex-1 px-3 py-2 text-sm font-medium rounded-lg",
+                    "transition-colors duration-200 min-w-0",
+                    isActive(personalWs.id)
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <span className="truncate block">{personalWs.name}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => switchWorkspace(extraWs.id)}
+                  className={cn(
+                    "relative z-10 flex-1 px-3 py-2 text-sm font-medium rounded-lg",
+                    "transition-colors duration-200 min-w-0",
+                    isActive(extraWs.id)
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <span className="truncate block">{extraWs.name}</span>
+                </button>
+              </div>
+            </div>
+          </>
         ) : (
           <Button
             variant="ghost"
             onClick={() => scrollToId("home", 1000, 12)}
-            className="max-[500px]:px-2"
+            className="px-2 sm:px-3"
           >
-            <Home className="hidden max-[500px]:block h-5 w-5" />
-            <span className="max-[500px]:hidden">Home</span>
+            <Home className="block sm:hidden h-5 w-5" />
+            <span className="hidden sm:inline">Home</span>
             <span className="sr-only">Home</span>
           </Button>
         )}
@@ -191,7 +235,7 @@ export default function TodoNavBar() {
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full"
+            className="rounded-full shrink-0"
             disabled={isLoading}
           >
             <User className="size-5" />

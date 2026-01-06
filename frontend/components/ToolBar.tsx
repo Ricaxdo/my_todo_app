@@ -37,45 +37,43 @@ export default function Toolbar({
   return (
     <div className="flex items-center gap-3 flex-wrap border-b border-border pb-4">
       {/* Status Filters with Icons */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 max-[349px]:ml-[-10px]">
         <button
           onClick={() => setActiveFilter("all")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-smc max-[349px]:text-xs font-medium transition-all ${
             activeFilter === "all"
               ? "bg-white text-black shadow-sm"
               : "bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary"
           }`}
         >
           <CheckCheck className="w-3.5 h-3.5" />
-          All
+          Todas
         </button>
 
         <button
           onClick={() => setActiveFilter("active")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm max-[349px]:text-xs font-medium transition-all ${
             activeFilter === "active"
               ? "bg-white text-black shadow-sm"
               : "bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary"
           }`}
         >
           <Circle className="w-3.5 h-3.5" />
-          Active
+          Activas
         </button>
 
         <button
           onClick={() => setActiveFilter("completed")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm max-[349px]:text-xs font-medium transition-all ${
             activeFilter === "completed"
               ? "bg-white text-black shadow-sm"
               : "bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary"
           }`}
         >
           <CheckCircle2 className="w-3.5 h-3.5" />
-          Completed
+          Completadas
         </button>
       </div>
-
-      <div className="h-6 w-px bg-border" />
 
       {/* Priority Filter */}
       {setPriorityFilter && (
@@ -115,7 +113,7 @@ export default function Toolbar({
       <div className="flex-1 min-w-[200px]" />
 
       {/* Search */}
-      <div className="relative group ml-auto">
+      <div className="relative group">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
         <input
           type="text"

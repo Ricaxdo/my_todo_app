@@ -350,6 +350,26 @@ export function useTodoDashboard() {
     return ids.includes(myUserId);
   }).length;
 
+  const logout = useCallback(() => {
+    // limpia estado local del dashboard
+    setTasks([]);
+    setNewTask("");
+    setActiveFilter("all");
+    setPriority("low");
+    setError(null);
+    setIsLoading(false);
+
+    // opcional: reset date
+    setSelectedDate(startOfDay(new Date()));
+    setDueDate(startOfDay(new Date()));
+
+    // workspace-related UI state
+    setMembers([]);
+    setMeId(null);
+    setAssignees([]);
+    setIsWorkspaceSwitching(false);
+  }, []);
+
   return {
     // data
     tasks,
@@ -359,6 +379,7 @@ export function useTodoDashboard() {
     selectedDate,
     userActiveCount,
     priority,
+    logout,
 
     activeCount,
     completionRate,
