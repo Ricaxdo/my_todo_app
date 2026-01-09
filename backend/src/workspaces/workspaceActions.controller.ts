@@ -1,9 +1,9 @@
 import type { NextFunction, Response } from "express";
 import mongoose from "mongoose";
 import { unauthorized } from "../errors/AppError";
+import { WorkspaceMemberModel } from "../members/workspaceMember.model";
 import type { AuthRequest } from "../middleware/auth";
 import { WorkspaceModel } from "./workspace.model";
-import { WorkspaceMemberModel } from "./workspaceMember.model";
 
 // ⚠️ ajusta esto si tu store de tasks está en otro lado
 import { deleteAllTasksInWorkspace } from "../tasks/task.store"; // si no existe, lo quitamos

@@ -2,10 +2,10 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 import path from "path";
 
+import { WorkspaceMemberModel } from "../members/workspaceMember.model";
 import { TaskModel } from "../tasks/task.model";
 import { UserModel } from "../users/user.model";
 import { WorkspaceModel } from "../workspaces/workspace.model";
-import { WorkspaceMemberModel } from "../workspaces/workspaceMember.model";
 
 dotenv.config({
   path: path.resolve(process.cwd(), ".env"),

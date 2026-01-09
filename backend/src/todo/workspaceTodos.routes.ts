@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { auth } from "../middleware/auth";
-import { requireWorkspaceMember } from "./workspace.middleware";
+import { requireWorkspaceMember } from "../workspaces/workspace.middleware";
 import {
   createWorkspaceTodo,
   deleteWorkspaceTodo,

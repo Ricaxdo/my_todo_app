@@ -15,8 +15,8 @@ import {
   removeWorkspaceMember,
 } from "./workspaceActions.controller";
 
-import { requireWorkspaceMember } from "./workspace.middleware";
-import { getWorkspaceMembers } from "./workspaceMembers.controller";
+import { getWorkspaceMembers } from "../members/workspaceMembers.controller";
+import { requireWorkspaceMember } from "../workspaces/workspace.middleware";
 
 export const workspaceRoutes = Router();
 
