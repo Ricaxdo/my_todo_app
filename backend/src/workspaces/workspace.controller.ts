@@ -1,10 +1,10 @@
 import type { NextFunction, Response } from "express";
 import mongoose from "mongoose";
 import { unauthorized } from "../errors/AppError";
+import { WorkspaceMemberModel } from "../members/workspaceMember.model";
 import type { AuthRequest } from "../middleware/auth";
 import { WorkspaceModel } from "./workspace.model";
 import { countExtraWorkspacesForUser } from "./workspace.utils";
-import { WorkspaceMemberModel } from "./workspaceMember.model";
 
 function cleanName(name: unknown): string | null {
   if (typeof name !== "string") return null;

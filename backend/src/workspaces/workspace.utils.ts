@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
+import { WorkspaceMemberModel } from "../members/workspaceMember.model";
 import { WorkspaceModel } from "./workspace.model";
-import { WorkspaceMemberModel } from "./workspaceMember.model";
 
 /**
  * Cuenta cuántos workspaces NO personales tiene el usuario.

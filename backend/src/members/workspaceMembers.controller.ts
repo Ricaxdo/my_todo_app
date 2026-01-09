@@ -1,6 +1,6 @@
 import type { NextFunction, Response } from "express";
 import type { AuthRequest } from "../middleware/auth";
-import { WorkspaceModel } from "./workspace.model";
+import { WorkspaceModel } from "../workspaces/workspace.model";
 import { WorkspaceMemberModel } from "./workspaceMember.model";
 
 export async function getWorkspaceMembers(

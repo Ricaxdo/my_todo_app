@@ -5,8 +5,8 @@ import { UserModel } from "../users/user.model";
 import { signToken } from "./auth.utils";
 
 // 👇 ajusta los paths según tu estructura real
+import { WorkspaceMemberModel } from "../members/workspaceMember.model";
 import { WorkspaceModel } from "../workspaces/workspace.model";
-import { WorkspaceMemberModel } from "../workspaces/workspaceMember.model";
 
 export async function signup(req: Request, res: Response, next: NextFunction) {
   let createdUserId: string | null = null;

@@ -5,11 +5,11 @@ import express from "express";
 import { errorHandler } from "./middleware/errorHandler";
 import { notFoundHandler } from "./middleware/notFound";
 
+import { workspaceTodosRoutes } from "../src/todo/workspaceTodos.routes";
 import { authRouter } from "./auth/auth.routes";
 import { rootRouter } from "./routes/root.routes";
 import { taskRoutes } from "./tasks/task.routes";
 import { workspaceRoutes } from "./workspaces/workspace.routes";
-import { workspaceTodosRoutes } from "./workspaces/workspaceTodos.routes";
 
 const app = express();
 
