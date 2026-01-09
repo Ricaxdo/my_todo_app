@@ -18,18 +18,42 @@ async function getPersonalWorkspaceId(userId: string): Promise<string> {
   return u.personalWorkspaceId.toString();
 }
 
-function parseValidDate(date?: string): Date | undefined {
-  if (!date) return undefined;
-  const d = new Date(date);
+/**
+ * Timezone del usuario (desde FE)
+ * Soporta: X-Timezone (preferido) o x-tz (compat)
+ */
+function getRequestTimezone(req: AuthRequest): string {
+  const tz = req.header("X-Timezone")?.trim() || req.header("x-tz")?.trim();
+
+  if (tz && tz.length <= 64) return tz;
+  return "America/Mexico_City";
+}
+
+/**
+ * Acepta:
+ * - "YYYY-MM-DD"
+ * - ISO string
+ * Nota: el store usará tz para rangos día/local.
+ */
+function parseValidDateLike(value?: string): Date | undefined {
+  if (!value) return undefined;
+
+  const isDayOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
+  if (isDayOnly) {
+    // solo referencia; el store lo interpreta con tz
+    const d = new Date(`${value}T00:00:00.000Z`);
+    return Number.isNaN(d.getTime()) ? undefined : d;
+  }
+
+  const d = new Date(value);
   return Number.isNaN(d.getTime()) ? undefined : d;
 }
 
-function isValidIsoDateString(value: string) {
-  const d = new Date(value);
-  return !Number.isNaN(d.getTime());
+function isValidIsoOrDay(value: string): boolean {
+  return Boolean(parseValidDateLike(value));
 }
 
-// ✅ COMPAT: /todos (usa personal workspace)
+// ✅ GET /todos?date=...
 export async function getTasks(
   req: AuthRequest,
   res: Response,
@@ -40,11 +64,16 @@ export async function getTasks(
     if (!userId) throw unauthorized("authorization required");
 
     const personalWorkspaceId = await getPersonalWorkspaceId(userId);
+    const tz = getRequestTimezone(req);
 
     const { date } = req.query as { date?: string };
-    const selectedDate = parseValidDate(date);
+    const selectedDate = parseValidDateLike(date);
 
-    const tasks = await getWorkspaceTasks(personalWorkspaceId, selectedDate);
+    const tasks = await getWorkspaceTasks(
+      personalWorkspaceId,
+      selectedDate,
+      tz
+    );
     return res.json(tasks);
   } catch (err) {
     return next(err);
@@ -61,30 +90,38 @@ export async function createTask(
     if (!userId) throw unauthorized("authorization required");
 
     const personalWorkspaceId = await getPersonalWorkspaceId(userId);
+    const tz = getRequestTimezone(req);
 
-    const { text, priority, category, dueDate } = req.body as {
+    const { text, priority, category, dueDate, assignees } = req.body as {
       text?: string;
       priority?: "low" | "medium" | "high";
       category?: string;
       dueDate?: string;
+      assignees?: string[];
     };
 
     if (!text || typeof text !== "string" || !text.trim()) {
       return res.status(400).json({ message: "text is required" });
     }
 
-    if (dueDate && !isValidIsoDateString(dueDate)) {
+    if (dueDate && !isValidIsoOrDay(dueDate)) {
       return res
         .status(400)
-        .json({ message: "dueDate must be a valid ISO date" });
+        .json({ message: "dueDate must be a valid ISO date or YYYY-MM-DD" });
     }
 
-    const created = await createTaskInWorkspace(personalWorkspaceId, userId, {
-      text: text.trim(),
-      ...(priority !== undefined ? { priority } : {}),
-      ...(category !== undefined ? { category } : {}),
-      ...(dueDate ? { dueDate } : {}),
-    });
+    const created = await createTaskInWorkspace(
+      personalWorkspaceId,
+      userId,
+      {
+        text: text.trim(),
+        ...(priority !== undefined ? { priority } : {}),
+        ...(category !== undefined ? { category } : {}),
+        ...(dueDate ? { dueDate } : {}),
+        ...(Array.isArray(assignees) && assignees.length ? { assignees } : {}), // ✅ AQUÍ
+      },
+      tz
+    );
 
     return res.status(201).json(created);
   } catch (err) {
@@ -102,6 +139,7 @@ export async function updateTask(
     if (!userId) throw unauthorized("authorization required");
 
     const personalWorkspaceId = await getPersonalWorkspaceId(userId);
+    const tz = getRequestTimezone(req);
 
     const { id } = req.params;
     if (!id) return res.status(400).json({ message: "task id is required" });
@@ -111,7 +149,7 @@ export async function updateTask(
       completed?: boolean;
       priority?: "low" | "medium" | "high";
       category?: string;
-      dueDate?: string | null;
+      dueDate?: string | null; // null => unset
     };
 
     if (
@@ -124,19 +162,24 @@ export async function updateTask(
       return res.status(400).json({ message: "nothing to update" });
     }
 
-    if (typeof dueDate === "string" && !isValidIsoDateString(dueDate)) {
+    if (typeof dueDate === "string" && !isValidIsoOrDay(dueDate)) {
       return res
         .status(400)
-        .json({ message: "dueDate must be a valid ISO date" });
+        .json({ message: "dueDate must be a valid ISO date or YYYY-MM-DD" });
     }
 
-    const updated = await updateTaskInWorkspace(personalWorkspaceId, id, {
-      ...(text !== undefined ? { text } : {}),
-      ...(completed !== undefined ? { completed } : {}),
-      ...(priority !== undefined ? { priority } : {}),
-      ...(category !== undefined ? { category } : {}),
-      ...(dueDate !== undefined ? { dueDate } : {}),
-    });
+    const updated = await updateTaskInWorkspace(
+      personalWorkspaceId,
+      id,
+      {
+        ...(text !== undefined ? { text } : {}),
+        ...(completed !== undefined ? { completed } : {}),
+        ...(priority !== undefined ? { priority } : {}),
+        ...(category !== undefined ? { category } : {}),
+        ...(dueDate !== undefined ? { dueDate } : {}),
+      },
+      tz // ✅ argumento extra
+    );
 
     if (!updated) return res.status(404).json({ message: "task not found" });
     return res.json(updated);

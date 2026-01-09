@@ -8,6 +8,12 @@ import {
   updateWorkspaceTodo,
 } from "./workspaceTodos.controller";
 
+import {
+  bulkCompleteTodos,
+  bulkCreateTodos,
+  bulkDeleteTodos,
+} from "./workspaceTodosBulk.controller";
+
 export const workspaceTodosRoutes = Router();
 
 workspaceTodosRoutes.use(auth);
@@ -31,4 +37,22 @@ workspaceTodosRoutes.delete(
   "/:workspaceId/todos/:id",
   requireWorkspaceMember,
   deleteWorkspaceTodo
+);
+
+workspaceTodosRoutes.post(
+  "/:workspaceId/todos/bulk-create",
+  requireWorkspaceMember,
+  bulkCreateTodos
+);
+
+workspaceTodosRoutes.patch(
+  "/:workspaceId/todos/bulk-complete",
+  requireWorkspaceMember,
+  bulkCompleteTodos
+);
+
+workspaceTodosRoutes.delete(
+  "/:workspaceId/todos/bulk-delete",
+  requireWorkspaceMember,
+  bulkDeleteTodos
 );

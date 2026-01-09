@@ -1,17 +1,44 @@
 // src/tasks/task.store.ts
+import { DateTime } from "luxon";
+import mongoose from "mongoose";
 import { TaskModel, type TaskDocument } from "./task.model";
 import type { Priority, Task } from "./task.types";
 
-function startOfDay(date: Date) {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
+function toObjectIds(ids: string[]): mongoose.Types.ObjectId[] {
+  return ids
+    .filter((id) => mongoose.Types.ObjectId.isValid(id))
+    .map((id) => new mongoose.Types.ObjectId(id));
 }
 
-function endOfDay(date: Date) {
-  const d = new Date(date);
-  d.setHours(23, 59, 59, 999);
-  return d;
+const DEFAULT_TZ = "America/Mexico_City";
+
+/** Rango del día (start/end) en timezone tz -> convertido a JS Date (instantes UTC) */
+function dayRangeInTz(day: Date, tz: string) {
+  const dt = DateTime.fromJSDate(day, { zone: tz });
+  const from = dt.startOf("day").toJSDate();
+  const to = dt.endOf("day").toJSDate();
+  return { from, to };
+}
+
+/** default: fin de HOY en tz (guardado como Date) */
+function endOfTodayInTz(tz: string) {
+  return DateTime.now().setZone(tz).endOf("day").toJSDate();
+}
+
+/**
+ * Si viene ISO con hora -> lo respetamos.
+ * Si viene solo fecha (YYYY-MM-DD) -> la tratamos como fin de ese día en tz.
+ */
+function parseDueDateInput(input: string, tz: string): Date {
+  // "2025-12-24" (date-only)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
+    return DateTime.fromISO(input, { zone: tz }).endOf("day").toJSDate();
+  }
+
+  // ISO completo con zona o sin zona (sin zona se interpreta en tz)
+  const dt = DateTime.fromISO(input, { zone: tz });
+  if (!dt.isValid) throw new Error("Invalid dueDate");
+  return dt.toJSDate();
 }
 
 function mapDocToTask(doc: TaskDocument & { _id: unknown }): Task {
@@ -29,7 +56,15 @@ function mapDocToTask(doc: TaskDocument & { _id: unknown }): Task {
     priority: doc.priority,
     category: doc.category,
     createdAt: createdAtIso,
+
+    // ✅ NUEVO (siempre)
+    assignees: Array.isArray(doc.assignees)
+      ? doc.assignees.map((id) => String(id))
+      : [],
   };
+  result.assignees = Array.isArray(doc.assignees)
+    ? doc.assignees.map((id) => String(id))
+    : [];
 
   if (doc.updatedAt) {
     const updatedAtIso =
@@ -39,7 +74,6 @@ function mapDocToTask(doc: TaskDocument & { _id: unknown }): Task {
     result.updatedAt = updatedAtIso;
   }
 
-  // ✅ dueDate para FE (ISO o null)
   result.dueDate = doc.dueDate
     ? doc.dueDate instanceof Date
       ? doc.dueDate.toISOString()
@@ -49,21 +83,29 @@ function mapDocToTask(doc: TaskDocument & { _id: unknown }): Task {
   return result;
 }
 
+/**
+ * Opción B (timezone-safe):
+ * - Un task "vive" en el día donde cae su dueDate (fin del día local por default).
+ * - Para ver tasks de un día, filtramos dueDate dentro del rango (start/end) en tz.
+ * - Legacy: tasks sin dueDate => solo aparecen el día que fueron creadas (rango en tz).
+ */
 export async function getWorkspaceTasks(
   workspaceId: string,
-  selectedDate?: Date
+  selectedDate?: Date,
+  tz: string = DEFAULT_TZ
 ): Promise<Task[]> {
-  const date = selectedDate ?? new Date();
-
-  const from = startOfDay(date);
-  const to = endOfDay(date);
+  const day = selectedDate ?? new Date();
+  const { from, to } = dayRangeInTz(day, tz);
 
   const docs = await TaskModel.find({
     workspaceId,
-    createdAt: { $lte: to },
     $or: [
-      { dueDate: { $exists: false } }, // 👈 no dueDate = solo día creado
-      { dueDate: { $gte: from } }, // 👈 persiste hasta dueDate
+      // ✅ tasks “modernas”: aparecen en el día donde cae su dueDate
+      { dueDate: { $gte: from, $lte: to } },
+
+      // ✅ legacy: sin dueDate -> solo día de creación
+      { dueDate: { $exists: false }, createdAt: { $gte: from, $lte: to } },
+      { dueDate: null, createdAt: { $gte: from, $lte: to } },
     ],
   })
     .sort({ createdAt: -1 })
@@ -79,16 +121,31 @@ export async function createTaskInWorkspace(
     text: string;
     priority?: Priority;
     category?: string;
-    dueDate?: string; // ISO
-  }
+    dueDate?: string;
+    assignees?: string[];
+  },
+  tz: string = DEFAULT_TZ
 ): Promise<Task> {
+  const due = input.dueDate
+    ? parseDueDateInput(input.dueDate, tz)
+    : endOfTodayInTz(tz);
+
+  // ✅ default: si no mandan assignees, se asigna al creador
+  const assigneeIds =
+    Array.isArray(input.assignees) && input.assignees.length
+      ? input.assignees
+      : [userId];
+
+  const assignees = toObjectIds(assigneeIds);
+
   const doc = await TaskModel.create({
     text: input.text,
     priority: input.priority ?? "medium",
     category: input.category ?? "General",
-    workspaceId,
-    createdBy: userId,
-    ...(input.dueDate ? { dueDate: new Date(input.dueDate) } : {}),
+    workspaceId: new mongoose.Types.ObjectId(workspaceId),
+    createdBy: new mongoose.Types.ObjectId(userId),
+    dueDate: due,
+    assignees,
   });
 
   return mapDocToTask(doc);
@@ -98,8 +155,9 @@ export async function updateTaskInWorkspace(
   workspaceId: string,
   taskId: string,
   data: Partial<Pick<Task, "text" | "completed" | "priority" | "category">> & {
-    dueDate?: string | null;
-  }
+    dueDate?: string | null; // ISO, YYYY-MM-DD o null
+  },
+  tz: string = DEFAULT_TZ
 ): Promise<Task | null> {
   const setData: Record<string, unknown> = {};
   const unsetData: Record<string, unknown> = {};
@@ -110,8 +168,12 @@ export async function updateTaskInWorkspace(
   if (data.category !== undefined) setData.category = data.category;
 
   if (data.dueDate !== undefined) {
-    if (data.dueDate) setData.dueDate = new Date(data.dueDate);
-    else unsetData.dueDate = 1;
+    if (data.dueDate === null) {
+      // decisión: si mandas null, lo dejamos legacy (sin dueDate)
+      unsetData.dueDate = 1;
+    } else {
+      setData.dueDate = parseDueDateInput(data.dueDate, tz);
+    }
   }
 
   const update =
@@ -139,7 +201,6 @@ export async function deleteTaskInWorkspace(
     _id: taskId,
     workspaceId,
   }).exec();
-
   return doc !== null;
 }
 
@@ -147,6 +208,5 @@ export async function deleteAllTasksInWorkspace(
   workspaceId: string
 ): Promise<number> {
   const result = await TaskModel.deleteMany({ workspaceId }).exec();
-  // mongoose devuelve deletedCount (puede ser undefined)
   return result.deletedCount ?? 0;
 }

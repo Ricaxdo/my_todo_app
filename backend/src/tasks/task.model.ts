@@ -1,29 +1,39 @@
 // src/tasks/task.model.ts
-import { Schema, model, type InferSchemaType } from "mongoose";
+import { Schema, model, type HydratedDocument, type Types } from "mongoose";
 
-const taskSchema = new Schema(
+export type TaskSchema = {
+  text: string;
+  completed: boolean;
+  priority: "low" | "medium" | "high";
+  category: string;
+
+  workspaceId: Types.ObjectId;
+  createdBy: Types.ObjectId;
+
+  dueDate?: Date | null;
+
+  // temporal
+  owner?: Types.ObjectId | null;
+
+  // ✅ nuevo
+  assignees: Types.ObjectId[];
+
+  // timestamps
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+const taskSchema = new Schema<TaskSchema>(
   {
-    text: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    completed: {
-      type: Boolean,
-      default: false,
-    },
+    text: { type: String, required: true, trim: true },
+    completed: { type: Boolean, default: false },
     priority: {
       type: String,
       enum: ["low", "medium", "high"],
       default: "medium",
     },
-    category: {
-      type: String,
-      default: "General",
-      trim: true,
-    },
+    category: { type: String, default: "General", trim: true },
 
-    // ✅ NUEVO: workspace
     workspaceId: {
       type: Schema.Types.ObjectId,
       ref: "Workspace",
@@ -31,26 +41,33 @@ const taskSchema = new Schema(
       index: true,
     },
 
-    // ✅ NUEVO: audit mínimo
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
 
-    // ✅ STEP 4: duración
     dueDate: {
       type: Date,
       required: false,
+      index: true,
     },
 
-    // 🟡 TEMPORAL
     owner: {
       type: Schema.Types.ObjectId,
       ref: "User",
       required: false,
       index: true,
     },
+
+    assignees: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+        required: false,
+        index: true,
+      },
+    ],
   },
   {
     timestamps: {
@@ -60,5 +77,5 @@ const taskSchema = new Schema(
   }
 );
 
-export type TaskDocument = InferSchemaType<typeof taskSchema>;
-export const TaskModel = model<TaskDocument>("Task", taskSchema);
+export type TaskDocument = HydratedDocument<TaskSchema>;
+export const TaskModel = model<TaskSchema>("Task", taskSchema);

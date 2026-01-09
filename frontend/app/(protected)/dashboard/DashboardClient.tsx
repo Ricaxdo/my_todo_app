@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@/features/auth/auth-context";
+import { useAuth } from "@/state/auth/auth-context";
 
 export default function DashboardClient() {
   const { user, isLoading } = useAuth();
