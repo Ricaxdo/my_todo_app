@@ -1,7 +1,7 @@
 "use client";
 
-import type { Me } from "@/features/auth/auth-api";
-import { authApi } from "@/features/auth/auth-api";
+import type { Me } from "@/services/auth/auth-api";
+import { authApi } from "@/services/auth/auth-api";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 type LoginPayload = { email: string; password: string };

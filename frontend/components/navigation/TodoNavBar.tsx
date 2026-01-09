@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 
-import { useTodoDashboard } from "@/app/hooks/useTodoDashboard";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { WorkspaceModal } from "@/components/workspaces/WorkspaceModal";
+import { useTodoDashboard } from "@/hooks/useTodoDashboard";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/state/auth/auth-context";
 import { useWorkspaces } from "@/state/workspaces/workspace-context";

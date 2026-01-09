@@ -1,7 +1,7 @@
 "use client";
 
-import { AppLink } from "@/components/AppLink";
-import ErrorBanner from "@/components/ErrorBanner";
+import { AppLink } from "@/components/ui/AppLink";
+import ErrorBanner from "@/components/ui/ErrorBanner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

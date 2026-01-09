@@ -12,8 +12,8 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/state/auth/auth-context";
 import { useNavigationUI } from "@/state/navigation/navigation-context";
 
-import { AppLink } from "@/components/AppLink";
-import ErrorBanner from "@/components/ErrorBanner";
+import { AppLink } from "@/components/ui/AppLink";
+import ErrorBanner from "@/components/ui/ErrorBanner";
 
 export default function LoginForm() {
   const router = useRouter();

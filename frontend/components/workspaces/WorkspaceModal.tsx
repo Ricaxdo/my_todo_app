@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useWorkspaceActivity } from "@/features/workspaces/useWorkspaceActivity";
+import { useWorkspaceActivity } from "@/hooks/useWorkspaceActivity";
 import { cn } from "@/lib/utils";
 import { useWorkspaces } from "@/state/workspaces/workspace-context";
 import {
@@ -27,7 +27,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ConfirmActionDialog } from "./ConfirmActionDialog";
 import { CreateWorkspaceModal } from "./CreateWorkspaceModal";
 
-import { formatActivity } from "@/features/workspaces/activity.format";
+import { formatActivity } from "@/lib/activity.format";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 

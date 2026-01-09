@@ -1,5 +1,5 @@
 // features/auth/auth-api.ts
-import { apiFetch, type ApiError } from "@/lib/api/clients";
+import { apiFetch, type ApiError } from "@/services/api/clients";
 
 export type Me = {
   _id: string;
