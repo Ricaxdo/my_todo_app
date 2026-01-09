@@ -12,10 +12,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAuth } from "@/features/auth/auth-context";
-import { WorkspaceModal } from "@/features/workspaces/WorkspaceModal";
-import { useWorkspaces } from "@/features/workspaces/workspace-context";
+import { WorkspaceModal } from "@/components/workspaces/WorkspaceModal";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/state/auth/auth-context";
+import { useWorkspaces } from "@/state/workspaces/workspace-context";
 
 import {
   BarChart3,

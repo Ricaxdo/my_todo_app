@@ -1,8 +1,8 @@
 "use client";
 
-import { useAuth } from "@/features/auth/auth-context";
-import type { WorkspaceMember } from "@/features/workspaces/workspace-context";
-import { useWorkspaces } from "@/features/workspaces/workspace-context";
+import { useAuth } from "@/state/auth/auth-context";
+import type { WorkspaceMember } from "@/state/workspaces/workspace-context";
+import { useWorkspaces } from "@/state/workspaces/workspace-context";
 import { format } from "date-fns";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";

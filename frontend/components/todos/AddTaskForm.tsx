@@ -1,5 +1,6 @@
 "use client";
 
+import type { Priority } from "@/app/types/types";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -11,7 +12,6 @@ import { es } from "date-fns/locale";
 import { CalendarIcon, ChevronDown, Plus, Users } from "lucide-react";
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
-import type { Priority } from "../app/types/types";
 
 type DueDateOption = "today" | "week" | "custom";
 type Member = { id: string; name: string };

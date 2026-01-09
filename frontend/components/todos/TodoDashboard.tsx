@@ -1,13 +1,13 @@
 "use client";
 
+import { useTodoDashboard } from "@/app/hooks/useTodoDashboard";
+import TodoNavBar from "@/components/navigation/TodoNavBar";
 import { Card } from "@/components/ui/card";
 import { useMemo } from "react";
-import { useTodoDashboard } from "../app/hooks/useTodoDashboard";
 import AddTaskForm from "./AddTaskForm";
 import TaskList from "./TaskList";
 import TodoFooter from "./TodoFooter";
 import TodoHeader from "./TodoHeader";
-import TodoNavBar from "./TodoNavBar";
 import TodoStats from "./TodoStats";
 import ToolBar from "./ToolBar";
 

@@ -1,7 +1,7 @@
 "use client";
 
+import type { Task } from "@/app/types/types";
 import { LayoutGrid } from "lucide-react";
-import type { Task } from "../app/types/types";
 import TaskItem from "./TaskItem";
 
 type AssigneeMember = {

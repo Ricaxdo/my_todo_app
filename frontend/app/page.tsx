@@ -1,4 +1,4 @@
-import LoginForm from "@/components/LoginForm";
+import LoginForm from "@/components/auth/LoginForm";
 import { RedirectIfAuth } from "@/components/auth/RedirectIfAuth";
 
 export default function HomePage() {

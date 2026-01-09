@@ -1,6 +1,6 @@
 "use client";
 
-import { useNavigationUI } from "@/features/navigation/navigation-context";
+import { useNavigationUI } from "@/state/navigation/navigation-context";
 import Link, { type LinkProps } from "next/link";
 import React from "react";
 

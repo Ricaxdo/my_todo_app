@@ -1,9 +1,9 @@
 // src/features/todo/components/TaskItem.tsx
 "use client";
 
+import type { Task } from "@/app/types/types";
 import { Calendar, Check, Clock, Flag, Trash2, Users } from "lucide-react";
 import type React from "react";
-import type { Task } from "../app/types/types";
 
 type AssigneeMember = {
   userId: string;

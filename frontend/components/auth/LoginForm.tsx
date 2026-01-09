@@ -9,11 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { useAuth } from "@/features/auth/auth-context";
-import { useNavigationUI } from "@/features/navigation/navigation-context";
+import { useAuth } from "@/state/auth/auth-context";
+import { useNavigationUI } from "@/state/navigation/navigation-context";
 
-import { AppLink } from "./AppLink";
-import ErrorBanner from "./ErrorBanner";
+import { AppLink } from "@/components/AppLink";
+import ErrorBanner from "@/components/ErrorBanner";
 
 export default function LoginForm() {
   const router = useRouter();

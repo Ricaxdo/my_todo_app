@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWorkspaceActivity } from "@/features/workspaces/useWorkspaceActivity";
 import { cn } from "@/lib/utils";
+import { useWorkspaces } from "@/state/workspaces/workspace-context";
 import {
   Activity,
   Building2,
@@ -25,7 +26,6 @@ import {
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ConfirmActionDialog } from "./ConfirmActionDialog";
 import { CreateWorkspaceModal } from "./CreateWorkspaceModal";
-import { useWorkspaces } from "./workspace-context";
 
 import { formatActivity } from "@/features/workspaces/activity.format";
 import { formatDistanceToNow } from "date-fns";

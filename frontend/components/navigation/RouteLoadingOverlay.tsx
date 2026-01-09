@@ -1,6 +1,6 @@
 "use client";
 
-import { useNavigationUI } from "@/features/navigation/navigation-context";
+import { useNavigationUI } from "@/state/navigation/navigation-context";
 
 export function RouteLoadingOverlay() {
   const { isNavigating } = useNavigationUI();

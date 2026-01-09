@@ -1,6 +1,7 @@
 "use client";
 
 import { AppLink } from "@/components/AppLink";
+import ErrorBanner from "@/components/ErrorBanner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,12 +10,11 @@ import {
   PopoverAnchor,
   PopoverContent,
 } from "@/components/ui/popover";
-import { useAuth } from "@/features/auth/auth-context";
+import { useAuth } from "@/state/auth/auth-context";
 import { CheckCircle2, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useRef, useState } from "react";
-import ErrorBanner from "./ErrorBanner";
 
 export default function SignupForm() {
   const router = useRouter();
