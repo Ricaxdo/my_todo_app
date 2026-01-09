@@ -1,15 +1,15 @@
 "use client";
 
 import TodoNavBar from "@/components/navigation/TodoNavBar";
+import { useTodoDashboard } from "@/components/todo-dashboard/hooks/useTodoDashboard";
 import { Card } from "@/components/ui/card";
-import { useTodoDashboard } from "@/hooks/useTodoDashboard";
 import { useMemo } from "react";
-import AddTaskForm from "./AddTaskForm";
-import TaskList from "./TaskList";
-import TodoFooter from "./TodoFooter";
-import TodoHeader from "./TodoHeader";
-import TodoStats from "./TodoStats";
-import ToolBar from "./ToolBar";
+import AddTaskForm from "../todos/AddTaskForm";
+import TaskList from "../todos/TaskList";
+import TodoFooter from "../todos/TodoFooter";
+import TodoHeader from "../todos/TodoHeader";
+import TodoStats from "../todos/TodoStats";
+import ToolBar from "../todos/ToolBar";
 
 export default function TodoDashboard() {
   const {
