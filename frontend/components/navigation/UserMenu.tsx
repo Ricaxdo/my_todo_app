@@ -33,7 +33,7 @@ export default function UserMenu({
 }: UserMenuProps) {
   return (
     <>
-      {/* ✅ Modal vive aquí para que siempre esté montado */}
+      {/* Modal vive aquí para que siempre esté montado */}
       <WorkspaceModal open={workspaceOpen} onOpenChange={setWorkspaceOpen} />
 
       <DropdownMenu>

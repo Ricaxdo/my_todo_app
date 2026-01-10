@@ -25,7 +25,7 @@ export default function TodoNavBar() {
   const router = useRouter();
 
   const { logout, user, isLoading: isAuthLoading } = useAuth();
-  const { resetDashboardState } = useTodoDashboard(); // ✅ FIX TS
+  const { resetDashboardState } = useTodoDashboard();
 
   const { workspaces, currentWorkspaceId, setCurrentWorkspaceId } =
     useWorkspaces();

@@ -64,7 +64,7 @@ export default function WorkspaceSwitch({
 
   return (
     <>
-      {/* ✅ MOBILE (<500px): 1 botón, click = toggle */}
+      {/* MOBILE (<500px): 1 botón, click = toggle */}
       <div className="hidden max-[499px]:block w-[76px] order-3">
         <button
           type="button"
@@ -80,7 +80,7 @@ export default function WorkspaceSwitch({
         </button>
       </div>
 
-      {/* ✅ DESKTOP (>=500px): switch segmentado */}
+      {/* DESKTOP (>=500px): switch segmentado */}
       <div className="hidden min-[500px]:block">
         <div
           className={cn(
