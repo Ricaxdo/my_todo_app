@@ -1,3 +1,5 @@
+// src/components/workspaces/CreateWorkspaceModal/CreateWorkspaceModal.tsx
+
 "use client";
 
 import {

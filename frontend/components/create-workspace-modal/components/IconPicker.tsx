@@ -5,8 +5,11 @@ import type { IconItem } from "../constants/workspaces.constants";
 import type { IconId } from "../types/workspaces.types";
 
 type Props = {
+  /** Lista de íconos disponibles para selección */
   items: IconItem[];
+  /** Ícono actualmente seleccionado (controlado por el padre) */
   value: IconId;
+  /** Callback al seleccionar un ícono */
   onChange: (id: IconId) => void;
 };
 
@@ -15,7 +18,7 @@ export default function IconPicker({ items, value, onChange }: Props) {
     <div className="grid grid-cols-5 min-[420px]:grid-cols-6 sm:grid-cols-8 gap-2 place-items-center">
       {items.map((it) => {
         const selected = it.id === value;
-
+        //
         return (
           <button
             key={it.id}
