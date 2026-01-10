@@ -1,4 +1,3 @@
-// components/auth/signup/signup.utils.ts
 export type SignupFieldKey =
   | "name"
   | "lastName"

@@ -22,21 +22,27 @@ export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // UI feedback global (e.g. barra/overlay de navegación) + estado de auth
   const { start } = useNavigationUI();
   const { login, isAuthLoading, error, clearError } = useAuth();
 
+  // Destino post-login (whitelist / saneado para evitar open-redirects)
   const next = useMemo(
     () => safeNext(searchParams.get("next")),
     [searchParams]
   );
 
+  // Estado local del form (controlado)
   const [form, setForm] = useState({ email: "", password: "" });
+
+  // “Single source” para deshabilitar inputs/botón mientras autentica
   const disabled = isAuthLoading;
 
   function updateField<K extends keyof typeof form>(
     key: K,
     value: (typeof form)[K]
   ) {
+    // Si el usuario vuelve a teclear, limpiamos error previo para no “pelear” con el UI
     if (error) clearError();
     setForm((prev) => ({ ...prev, [key]: value }));
   }
@@ -44,6 +50,7 @@ export default function LoginForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
+    // Al enviar, aseguramos que el banner muestre solo errores “fresh”
     if (error) clearError();
 
     try {
@@ -52,10 +59,11 @@ export default function LoginForm() {
         password: form.password,
       });
 
+      // Feedback inmediato de navegación y redirección sin dejar “back” al login
       start();
       router.replace(next);
     } catch {
-      // Si login() ya setea `error`, no hacemos nada aquí (NO navegar).
+      // login() maneja el error en el contexto; aquí solo evitamos navegar.
     }
   }
 
@@ -65,6 +73,7 @@ export default function LoginForm() {
       subtitle="Accede a tus tareas y mantente enfocado."
       maxWidthClassName="max-w-md"
     >
+      {/* Error global del flujo de auth */}
       <ErrorBanner
         title="No se pudo iniciar sesión"
         message={error}
@@ -102,7 +111,7 @@ export default function LoginForm() {
           </AppLink>
         </div>
 
-        {/* Password */}
+        {/* Password (input compuesto: label + toggle visibilidad + reglas, etc.) */}
         <PasswordField
           id="password"
           label="Contraseña"
