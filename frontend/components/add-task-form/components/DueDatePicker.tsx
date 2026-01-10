@@ -10,7 +10,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { CalendarIcon, ChevronDown } from "lucide-react";
 
-import { startOfDay } from "./utils/addTaskForm.utils";
+import { startOfDay } from "../utils/addTaskForm.utils";
 
 type Props = {
   /**

@@ -6,8 +6,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ChevronDown, Users } from "lucide-react";
-import type { Member } from "./types/addTaskForm.types";
-import { toTitleCase } from "./utils/addTaskForm.utils";
+import type { Member } from "../types/addTaskForm.types";
+import { toTitleCase } from "../utils/addTaskForm.utils";
 
 type Props = {
   /**

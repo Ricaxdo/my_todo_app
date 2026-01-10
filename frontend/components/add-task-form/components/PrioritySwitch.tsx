@@ -1,7 +1,7 @@
 "use client";
 
 import type { Priority } from "@/types/types";
-import { PRIORITY_LEVELS } from "./utils/addTaskForm.utils";
+import { PRIORITY_LEVELS } from "../utils/addTaskForm.utils";
 
 type Props = {
   priority: Priority;

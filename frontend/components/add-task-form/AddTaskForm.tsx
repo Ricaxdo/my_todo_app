@@ -7,9 +7,9 @@ import { useDueDate } from "./hooks/useDueDate";
 import type { AddTaskFormProps } from "./types/addTaskForm.types";
 import { prioritySliderPosition } from "./utils/addTaskForm.utils";
 
-import AssigneesPicker from "./AssigneesPicker";
-import DueDatePicker from "./DueDatePicker";
-import PrioritySwitch from "./PrioritySwitch";
+import AssigneesPicker from "./components/AssigneesPicker";
+import DueDatePicker from "./components/DueDatePicker";
+import PrioritySwitch from "./components/PrioritySwitch";
 
 /**
  * AddTaskForm (presentational + orchestration):
