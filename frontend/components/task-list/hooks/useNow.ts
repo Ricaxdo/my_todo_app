@@ -13,7 +13,7 @@ export function useNow(intervalMs: number | null = null) {
   const [now, setNow] = useState(0);
 
   useEffect(() => {
-    // ✅ hacemos el primer setNow desde un callback (timer),
+    // hacemos el primer setNow desde un callback (timer),
     // así evitamos "setState in effect body"
     const first = window.setTimeout(() => {
       setNow(Date.now());

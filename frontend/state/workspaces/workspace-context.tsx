@@ -9,8 +9,7 @@ import React, {
   useState,
 } from "react";
 
-import { useAuth } from "@/state/auth/auth-context"; // ajusta path real
-
+import { useAuth } from "@/state/auth/auth-context";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 function getToken() {

@@ -135,7 +135,7 @@ export function CreateWorkspaceModal({
   }, [name, maxReached, isSaving]);
 
   const canJoin = useMemo(() => {
-    return !joining && joinCode.trim().length >= 4; // ajusta si tu código es fijo
+    return !joining && joinCode.trim().length >= 4;
   }, [joining, joinCode]);
 
   const closeAndReset = () => {
