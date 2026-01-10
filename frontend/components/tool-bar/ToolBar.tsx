@@ -2,10 +2,10 @@
 
 import type { ToolbarProps } from "./types/toolbar.types";
 
-import PrioritySelect from "./PrioritySelect";
-import SearchInput from "./SearchInput";
-import SortSelect from "./SortSelect";
-import StatusFilterChips from "./StatusFilterChips";
+import PrioritySelect from "./components/PrioritySelect";
+import SearchInput from "./components/SearchInput";
+import SortSelect from "./components/SortSelect";
+import StatusFilterChips from "./components/StatusFilterChips";
 
 export default function Toolbar(props: ToolbarProps) {
   const {

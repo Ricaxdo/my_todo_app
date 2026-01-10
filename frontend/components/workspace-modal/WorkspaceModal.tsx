@@ -223,7 +223,6 @@ export function WorkspaceModal({ open, onOpenChange }: WorkspaceModalProps) {
           await refreshWorkspaces();
           // mensaje en el mismo feedback del join
           // (si prefieres otro state, cámbialo aquí)
-          // eslint-disable-next-line @typescript-eslint/no-floating-promises
           Promise.resolve().then(() => modal.joinMsg ?? null);
         }}
         onJoin={async (code) => {

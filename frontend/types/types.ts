@@ -1,4 +1,3 @@
-// src/features/todo/types/types.ts
 export type Priority = "low" | "medium" | "high";
 
 export interface BackendTask {
