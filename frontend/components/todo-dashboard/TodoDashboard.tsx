@@ -6,10 +6,10 @@ import { Card } from "@/components/ui/card";
 
 // Componentes del dominio Todo
 import AddTaskForm from "../add-task-form/AddTaskForm";
-import TaskList from "../todos/TaskList";
+import TaskList from "../task-list/TaskList";
+import TodoStats from "../todo-stats/TodoStats";
 import TodoFooter from "../todos/TodoFooter";
 import TodoHeader from "../todos/TodoHeader";
-import TodoStats from "../todos/TodoStats";
 import ToolBar from "../todos/ToolBar";
 
 /**
