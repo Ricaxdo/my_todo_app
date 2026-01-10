@@ -21,7 +21,8 @@ export function toDate(value: unknown): Date | null {
 }
 
 export function getPriorityMeta(priority: Task["priority"]) {
-  const label = priority === "low" ? "Low" : priority === "medium" ? "Medium" : "High";
+  const label =
+    priority === "low" ? "Low" : priority === "medium" ? "Medium" : "High";
 
   const classes =
     priority === "low"
@@ -31,7 +32,11 @@ export function getPriorityMeta(priority: Task["priority"]) {
       : "text-red-400 bg-red-500/10 border-red-500/30";
 
   const iconColor =
-    priority === "low" ? "text-blue-400" : priority === "medium" ? "text-amber-400" : "text-red-400";
+    priority === "low"
+      ? "text-blue-400"
+      : priority === "medium"
+      ? "text-amber-400"
+      : "text-red-400";
 
   return { label, classes, iconColor };
 }
@@ -55,21 +60,22 @@ export function getAssigneeLabel(params: {
   const ids = Array.isArray(assigneeIds) ? assigneeIds : [];
   if (ids.length === 0) return null;
 
-  // ✅ "Todos" (solo aplica en workspaces compartidos)
+  // "Todos" (solo aplica en workspaces compartidos)
   if (!isPersonalWorkspace) {
     const allIds = new Set<string>(members.map((m) => m.id));
     if (meId) allIds.add(meId);
 
-    const isAll = allIds.size > 0 && Array.from(allIds).every((id) => ids.includes(id));
+    const isAll =
+      allIds.size > 0 && Array.from(allIds).every((id) => ids.includes(id));
     if (isAll) return "Todos";
   }
 
-  // ✅ personal: si te incluye a ti, es "Tú"
+  // personal: si te incluye a ti, es "Tú"
   if (isPersonalWorkspace && meId && ids.includes(meId)) {
     return "Tú";
   }
 
-  // ✅ toma el primer id que podamos resolver a un nombre
+  // toma el primer id que podamos resolver a un nombre
   const firstMatch = ids
     .map((id) => members.find((m) => m.id === id))
     .find(Boolean);

@@ -18,7 +18,7 @@ export default function TaskItem({
   members,
   isPersonalWorkspace,
   meId,
-  now, // ✅ viene del padre (TaskList/Dashboard)
+  now, // viene del padre (TaskList/Dashboard)
 }: TaskItemProps) {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     // ✅ accesibilidad: permitir toggle con Enter / Space
@@ -37,11 +37,11 @@ export default function TaskItem({
     meId,
   });
 
-  // ✅ normaliza fechas (Task puede traer string)
+  // normaliza fechas (Task puede traer string)
   const createdAtDate = toDate(task.createdAt) ?? new Date();
   const dueDateObj = toDate(task.dueDate);
 
-  // ✅ no calcula tiempo aquí, solo compara contra "now" recibido
+  // no calcula tiempo aquí, solo compara contra "now" recibido
   const isOverdue =
     Boolean(dueDateObj) &&
     !task.completed &&

@@ -16,5 +16,5 @@ export type TaskItemProps = {
   isPersonalWorkspace?: boolean;
   meId?: string | null;
 
-  now: number; // ✅ nuevo
+  now: number;
 };
