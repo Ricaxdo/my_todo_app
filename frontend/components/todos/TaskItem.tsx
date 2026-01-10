@@ -1,12 +1,12 @@
 // src/features/todo/components/TaskItem.tsx
 "use client";
 
-import type { Task } from "@/app/types/types";
+import type { Task } from "@/types/types";
 import { Calendar, Check, Clock, Flag, Trash2, Users } from "lucide-react";
 import type React from "react";
 
 type AssigneeMember = {
-  userId: string;
+  id: string;
   name: string;
   lastName?: string;
   isYou?: boolean;
@@ -43,7 +43,7 @@ function getAssigneeLabels(
 
   // ✅ Todos (comparando sets)
   if (!isPersonalWorkspace) {
-    const allIds = new Set<string>(members.map((m) => m.userId));
+    const allIds = new Set<string>(members.map((m) => m.id));
     if (meId) allIds.add(meId);
 
     const isAll =
@@ -59,7 +59,7 @@ function getAssigneeLabels(
 
   // ✅ map ids -> labels usando members
   const labels = ids
-    .map((id) => members.find((m) => m.userId === id))
+    .map((id) => members.find((m) => m.id === id))
     .filter((m): m is AssigneeMember => Boolean(m))
     .map((m) => {
       if (m.isYou) return "Tú";

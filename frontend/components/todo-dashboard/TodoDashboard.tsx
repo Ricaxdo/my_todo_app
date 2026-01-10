@@ -1,9 +1,9 @@
 "use client";
 
 import TodoNavBar from "@/components/navigation/TodoNavBar";
-import { useTodoDashboard } from "@/components/todo-dashboard/hooks/useTodoDashboard";
+import { useTodoDashboard } from "@/components/todo-dashboard"; // 👈 usa el index.ts
 import { Card } from "@/components/ui/card";
-import { useMemo } from "react";
+
 import AddTaskForm from "../todos/AddTaskForm";
 import TaskList from "../todos/TaskList";
 import TodoFooter from "../todos/TodoFooter";
@@ -18,12 +18,12 @@ export default function TodoDashboard() {
     activeFilter,
     setActiveFilter,
     handleAddTask,
-    toggleTask, // (id: string) => Promise<void>
-    deleteTask, // (id: string) => Promise<void>
+    toggleTask,
+    deleteTask,
     filteredTasks,
     activeCount,
     completionRate,
-    selectedDate, // 👈 sin punto
+    selectedDate,
     setSelectedDate,
     priority,
     setPriority,
@@ -38,15 +38,6 @@ export default function TodoDashboard() {
     userActiveCount,
   } = useTodoDashboard();
 
-  const assigneeMembers = useMemo(
-    () =>
-      members.map((m) => ({
-        userId: m.id, // 👈 aquí asumimos que m.id ES el userId real
-        name: m.name,
-      })),
-    [members]
-  );
-
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/20">
       <div className="fixed inset-0 bg-grid-white pointer-events-none opacity-[0.05]" />
@@ -59,27 +50,23 @@ export default function TodoDashboard() {
           <TodoNavBar />
         </div>
 
-        {/* HOME */}
         <section id="home">
           <TodoHeader />
         </section>
 
         {isWorkspaceSwitching ? (
           <section id="progress" className="space-y-6">
-            {/* skeleton PROGRESS */}
             <Card className="p-6 space-y-3">
               <div className="h-4 w-40 animate-pulse rounded bg-muted" />
               <div className="h-24 w-full animate-pulse rounded bg-muted" />
             </Card>
 
-            {/* skeleton ADD FORM */}
             <Card className="p-6 space-y-3">
               <div className="h-4 w-32 animate-pulse rounded bg-muted" />
               <div className="h-10 w-full animate-pulse rounded bg-muted" />
               <div className="h-10 w-full animate-pulse rounded bg-muted" />
             </Card>
 
-            {/* skeleton TASK LIST */}
             <section id="tasks" className="relative">
               <div id="tasks-anchor" className="absolute -top-6 h-1 w-1" />
               <Card className="p-6 space-y-3">
@@ -92,7 +79,6 @@ export default function TodoDashboard() {
           </section>
         ) : (
           <>
-            {/* PROGRESS */}
             <section id="progress">
               <TodoStats
                 activeCount={activeCount}
@@ -112,13 +98,12 @@ export default function TodoDashboard() {
               dueDate={dueDate}
               setDueDate={setDueDate}
               isPersonalWorkspace={isPersonalWorkspace}
-              meId={meId ?? ""} // ✅ fallback para no romper types
+              meId={meId ?? ""}
               members={members}
               assignees={assignees}
               setAssignees={setAssignees}
             />
 
-            {/* TASKS */}
             <section id="tasks" className="relative">
               <div id="tasks-anchor" className="absolute -top-6 h-1 w-1" />
 
@@ -132,7 +117,7 @@ export default function TodoDashboard() {
                   tasks={filteredTasks}
                   toggleTask={toggleTask}
                   deleteTask={deleteTask}
-                  members={assigneeMembers}
+                  members={members} // 👈 listo
                   isPersonalWorkspace={isPersonalWorkspace}
                   meId={meId}
                 />
