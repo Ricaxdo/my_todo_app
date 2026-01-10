@@ -93,7 +93,7 @@ export default function LoginForm() {
         </div>
 
         {/* Link recuperar password */}
-        <div className="flex justify-end">
+        <div className="flex mb-[-20px] justify-end">
           <AppLink
             href="/forgot-password"
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"
