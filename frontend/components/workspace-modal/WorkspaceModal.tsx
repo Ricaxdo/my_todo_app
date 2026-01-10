@@ -24,8 +24,8 @@ import {
   Users,
 } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { ConfirmActionDialog } from "./ConfirmActionDialog";
-import { CreateWorkspaceModal } from "./CreateWorkspaceModal";
+import { ConfirmActionDialog } from "../create-workspace-modal/ConfirmActionDialog";
+import { CreateWorkspaceModal } from "../create-workspace-modal/CreateWorkspaceModal";
 
 import { formatActivity } from "@/lib/activity.format";
 import { formatDistanceToNow } from "date-fns";

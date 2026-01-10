@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { WorkspaceModal } from "@/components/workspaces/WorkspaceModal";
+import { WorkspaceModal } from "@/components/workspace-modal/WorkspaceModal";
 import { LogOut, Settings, User } from "lucide-react";
 
 type UserMenuProps = {
