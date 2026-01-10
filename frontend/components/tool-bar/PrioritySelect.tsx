@@ -1,4 +1,3 @@
-// src/features/todo/components/Toolbar/components/PrioritySelect.tsx
 "use client";
 
 import { SlidersHorizontal } from "lucide-react";

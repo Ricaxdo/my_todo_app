@@ -1,4 +1,3 @@
-// src/features/todo/components/Toolbar/Toolbar.tsx
 "use client";
 
 import type { ToolbarProps } from "./types/toolbar.types";

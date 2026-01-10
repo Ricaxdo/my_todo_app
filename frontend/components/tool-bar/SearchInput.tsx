@@ -1,4 +1,3 @@
-// src/features/todo/components/Toolbar/components/SearchInput.tsx
 "use client";
 
 import { Search } from "lucide-react";

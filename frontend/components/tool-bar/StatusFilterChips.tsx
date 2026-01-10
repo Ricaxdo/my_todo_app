@@ -1,4 +1,3 @@
-// src/features/todo/components/Toolbar/components/StatusFilterChips.tsx
 "use client";
 
 import { STATUS_ITEMS } from "./constants/toolbar.constants";
