@@ -1,7 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { ActivityItem, ActivityListResponse } from "./activity.types";
+import type {
+  ActivityItem,
+  ActivityListResponse,
+} from "../types/activity.types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 

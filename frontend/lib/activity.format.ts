@@ -1,4 +1,4 @@
-import type { ActivityItem } from "./activity.types";
+import type { ActivityItem } from "../types/activity.types";
 
 function fullName(actor: ActivityItem["actor"]) {
   return actor.lastName ? `${actor.name} ${actor.lastName}` : actor.name;

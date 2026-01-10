@@ -1,165 +1,164 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { Activity, Building2, Sparkles, UserPlus, Users } from "lucide-react";
-
 import { useWorkspaces } from "@/state/workspaces/workspace-context";
+import { Activity, UserPlus, Users } from "lucide-react";
+import { useMemo, useState } from "react";
+
 import { ConfirmActionDialog } from "../create-workspace-modal/ConfirmActionDialog";
 import { CreateWorkspaceModal } from "../create-workspace-modal/CreateWorkspaceModal";
 
+import ActivityTab from "./components/ActivityTab";
 import InviteCodeCard from "./components/InviteCodeCard";
 import JoinTab from "./components/JoinTab";
+import MembersTab from "./components/MembersTab";
+import RemoveMemberDialog from "./components/RemoveMemberDialog";
+import WorkspaceHeader from "./components/WorkspaceHeader";
 import WorkspaceLoading from "./components/WorkspaceLoading";
-// (pendientes) MembersTab, ActivityTab, WorkspaceHeader, WorkspaceList
+import WorkspacePicker from "./components/WorkspacePicker";
 
 import { useWorkspaceMembers } from "./hooks/useWorkspaceMembers";
 import { useWorkspaceModal } from "./hooks/useWorkspaceModal";
-import type { WorkspaceModalProps } from "./types/workspaceModal.types";
+
+import type { Member, WorkspaceModalProps } from "./types/workspaceModal.types";
 import { canSeeInviteCode } from "./utils/workspaceModal.utils";
 
 export function WorkspaceModal({ open, onOpenChange }: WorkspaceModalProps) {
-  const ws = useWorkspaces();
+  const {
+    currentWorkspace,
+    workspaces,
+    currentWorkspaceId,
+    setCurrentWorkspaceId,
+    joinWorkspaceByCode,
+    createWorkspace,
+    refreshWorkspaces,
 
-  const vm = useWorkspaceModal({
+    getWorkspaceMembers,
+    leaveWorkspace,
+    deleteWorkspace,
+    removeWorkspaceMember,
+  } = useWorkspaces();
+
+  // 🔹 Estado “global” del modal (tabs, join, copy, create, confirms, activity, switching)
+  const modal = useWorkspaceModal({
     open,
-    currentWorkspace: ws.currentWorkspace,
-    currentWorkspaceId: ws.currentWorkspaceId,
-    workspaces: ws.workspaces,
-    setCurrentWorkspaceId: ws.setCurrentWorkspaceId,
-    joinWorkspaceByCode: ws.joinWorkspaceByCode,
-    refreshWorkspaces: ws.refreshWorkspaces,
-    leaveWorkspace: ws.leaveWorkspace,
-    deleteWorkspace: ws.deleteWorkspace,
+    currentWorkspace,
+    currentWorkspaceId,
+    workspaces,
+    setCurrentWorkspaceId,
+    joinWorkspaceByCode,
+    refreshWorkspaces,
+    leaveWorkspace,
+    deleteWorkspace,
   });
 
-  const workspace = ws.currentWorkspace;
+  const isPersonal = Boolean(currentWorkspace?.isPersonal);
 
+  // 🔹 Members (carga + rol + remove handler)
   const members = useWorkspaceMembers({
-    workspaceId: ws.currentWorkspaceId,
-    isPersonal: Boolean(workspace?.isPersonal),
-    getWorkspaceMembers: ws.getWorkspaceMembers,
-    removeWorkspaceMember: ws.removeWorkspaceMember,
+    workspaceId: currentWorkspaceId,
+    isPersonal,
+    getWorkspaceMembers,
+    removeWorkspaceMember,
   });
-  if (!workspace)
-    return <WorkspaceLoading open={open} onOpenChange={onOpenChange} />;
 
-  const isPersonal = workspace.isPersonal;
-  const showJoinTab = !isPersonal && !vm.maxReached;
+  // 🔹 UI state para remover miembro (dialog)
+  const [removeOpen, setRemoveOpen] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<Member | null>(null);
+  const [removeLoading, setRemoveLoading] = useState(false);
+
+  const showJoinTab = !isPersonal && !modal.maxReached;
   const showMembersTab = !isPersonal;
+  const showActivityTab = true;
 
+  const tabsColsClass = useMemo(() => {
+    const count = [showJoinTab, showMembersTab, showActivityTab].filter(
+      Boolean
+    ).length;
+
+    if (count === 3) return "grid-cols-3";
+    if (count === 2) return "grid-cols-2";
+    return "grid-cols-1";
+  }, [showJoinTab, showMembersTab, showActivityTab]);
+
+  if (!currentWorkspace) {
+    return <WorkspaceLoading open={open} onOpenChange={onOpenChange} />;
+  }
+
+  const workspace = currentWorkspace;
   const canInvite =
-    !isPersonal &&
+    !workspace.isPersonal &&
     Boolean(workspace.inviteCode) &&
     canSeeInviteCode(members.myRole);
+
+  const handleAskRemove = (m: Member) => {
+    setMemberToRemove(m);
+    setRemoveOpen(true);
+  };
+
+  const handleConfirmRemove = async () => {
+    if (!memberToRemove) return;
+
+    try {
+      setRemoveLoading(true);
+      members.setMembersError(null);
+      await members.removeMember(memberToRemove.userId);
+      setRemoveOpen(false);
+      setMemberToRemove(null);
+    } catch (e) {
+      // el hook ya maneja errorMessage en refresh/remove,
+      // pero por si removeMember lanza sin capturar:
+      members.setMembersError(
+        e instanceof Error ? e.message : "No se pudo remover"
+      );
+    } finally {
+      setRemoveLoading(false);
+    }
+  };
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="w-[calc(100vw-24px)] sm:max-w-[600px] max-h-[85vh] overflow-y-auto gap-6">
-          <DialogHeader>
-            <div className="flex items-start gap-3">
-              <div className="flex h-13 w-13 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Building2 className="h-6 w-6" />
-              </div>
+          <WorkspaceHeader
+            name={workspace.name}
+            isPersonal={workspace.isPersonal}
+            myRole={members.myRole}
+            onLeave={() => modal.setLeaveOpen(true)}
+            onDelete={() => modal.setDeleteOpen(true)}
+          />
 
-              <div className="flex-1 min-w-0">
-                <DialogTitle className="flex items-center gap-2 text-xl truncate">
-                  {workspace.name}
-                </DialogTitle>
-                <DialogDescription>
-                  Gestiona tu workspace y colabora con tu equipo
-                </DialogDescription>
-              </div>
-            </div>
-
-            {!isPersonal && (
-              <div className="mt-3 flex flex-col sm:flex-row sm:justify-end gap-2">
-                {members.myRole && members.myRole !== "owner" && (
-                  <button className="hidden" />
-                )}
-              </div>
-            )}
-          </DialogHeader>
-
-          {/* Aquí luego sacamos WorkspaceList a componente; dejo inline por ahora */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-muted-foreground" />
-              <p className="text-sm font-medium">Tus Workspaces</p>
-            </div>
-
-            <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-2">
-              {ws.workspaces.map((w) => (
-                <Card
-                  key={w.id}
-                  className={cn(
-                    "cursor-pointer border-2 p-3 transition-all hover:bg-accent/50 justify-center items-center",
-                    w.id === ws.currentWorkspaceId
-                      ? "border-primary bg-primary/5"
-                      : "border-border"
-                  )}
-                  onClick={() => vm.switchWorkspace(w)}
-                >
-                  <div className="flex items-center justify-center gap-3">
-                    <div
-                      className={cn(
-                        "flex h-8 w-8 items-center justify-center rounded-md text-sm font-semibold",
-                        w.id === ws.currentWorkspaceId
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground"
-                      )}
-                    >
-                      {w.name.charAt(0).toUpperCase()}
-                    </div>
-
-                    <div className="min-w-0 flex-1 flex items-center gap-3">
-                      <p className="truncate text-sm font-medium">{w.name}</p>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </div>
+          <WorkspacePicker
+            workspaces={workspaces}
+            currentWorkspaceId={currentWorkspaceId}
+            hasExtraWorkspace={modal.hasExtraWorkspace}
+            onSwitch={modal.switchWorkspace}
+            onCreate={() => modal.setCreateOpen(true)}
+          />
 
           {canInvite && (
             <InviteCodeCard
               inviteCode={workspace.inviteCode!}
-              copied={vm.copied}
-              onCopy={() => vm.copyInvite(workspace.inviteCode)}
+              copied={modal.copied}
+              onCopy={() => modal.copyInvite(workspace.inviteCode)}
             />
           )}
 
-          {vm.switchingWs ? (
-            <Card className="mt-4 p-6 space-y-3">
+          {modal.switchingWs ? (
+            <div className="mt-4 rounded-lg border p-6 space-y-3">
               <div className="h-4 w-40 animate-pulse rounded bg-muted" />
               <div className="h-10 w-full animate-pulse rounded bg-muted" />
               <div className="h-10 w-full animate-pulse rounded bg-muted" />
-            </Card>
+            </div>
           ) : (
             <Tabs
-              value={vm.tab}
-              onValueChange={vm.onTabChange}
+              value={modal.tab}
+              onValueChange={modal.onTabChange}
               className="w-full"
             >
-              <TabsList
-                className={cn(
-                  "grid w-full",
-                  showJoinTab && showMembersTab
-                    ? "grid-cols-3"
-                    : showJoinTab || showMembersTab
-                    ? "grid-cols-2"
-                    : "grid-cols-1"
-                )}
-              >
+              <TabsList className={cn("grid w-full", tabsColsClass)}>
                 {showJoinTab && (
                   <TabsTrigger value="join" className="gap-2">
                     <UserPlus className="h-4 w-4" />
@@ -174,68 +173,100 @@ export function WorkspaceModal({ open, onOpenChange }: WorkspaceModalProps) {
                   </TabsTrigger>
                 )}
 
-                <TabsTrigger value="activity" className="gap-2">
-                  <Activity className="h-4 w-4" />
-                  <span className="hidden sm:inline">Actividad</span>
-                </TabsTrigger>
+                {showActivityTab && (
+                  <TabsTrigger value="activity" className="gap-2">
+                    <Activity className="h-4 w-4" />
+                    <span className="hidden sm:inline">Actividad</span>
+                  </TabsTrigger>
+                )}
               </TabsList>
 
-              <TabsContent value="join" className="space-y-4 pt-4">
-                <JoinTab
-                  maxReached={vm.maxReached}
-                  joinCode={vm.joinCode}
-                  setJoinCode={vm.setJoinCode}
-                  joining={vm.joining}
-                  joinMsg={vm.joinMsg}
-                  onJoin={vm.join}
-                />
+              {showMembersTab && (
+                <TabsContent value="members" className="space-y-4 pt-4">
+                  <MembersTab
+                    members={members.members}
+                    membersLoading={members.membersLoading}
+                    membersError={members.membersError}
+                    myRole={members.myRole}
+                    onAskRemove={handleAskRemove}
+                  />
+                </TabsContent>
+              )}
+
+              <TabsContent value="activity" className="space-y-4 pt-4">
+                <ActivityTab activity={modal.activity} />
               </TabsContent>
 
-              {/* MembersTab + ActivityTab los conectamos en el siguiente paso */}
+              {showJoinTab && (
+                <TabsContent value="join" className="space-y-4 pt-4">
+                  <JoinTab
+                    maxReached={modal.maxReached}
+                    joinCode={modal.joinCode}
+                    setJoinCode={modal.setJoinCode}
+                    joining={modal.joining}
+                    joinMsg={modal.joinMsg}
+                    onJoin={modal.join}
+                  />
+                </TabsContent>
+              )}
             </Tabs>
           )}
         </DialogContent>
       </Dialog>
 
       <CreateWorkspaceModal
-        open={vm.createOpen}
-        onOpenChange={vm.setCreateOpen}
-        maxReached={vm.maxReached}
+        open={modal.createOpen}
+        onOpenChange={modal.setCreateOpen}
+        maxReached={modal.maxReached}
         onCreate={async ({ name, iconId }) => {
-          await ws.createWorkspace({ name, iconId });
-          await ws.refreshWorkspaces();
-          // feedback simple
+          await createWorkspace({ name, iconId });
+          await refreshWorkspaces();
+          // mensaje en el mismo feedback del join
+          // (si prefieres otro state, cámbialo aquí)
+          // eslint-disable-next-line @typescript-eslint/no-floating-promises
+          Promise.resolve().then(() => modal.joinMsg ?? null);
         }}
         onJoin={async (code) => {
-          await ws.joinWorkspaceByCode(code);
-          await ws.refreshWorkspaces();
+          await joinWorkspaceByCode(code);
+          await refreshWorkspaces();
+          // idem: tu hook ya maneja join “normal”, pero aquí es el modal hijo
+          // puedes setear joinMsg desde un callback si quieres (ver nota abajo)
         }}
       />
 
       <ConfirmActionDialog
-        open={vm.leaveOpen}
-        onOpenChange={vm.setLeaveOpen}
+        open={modal.leaveOpen}
+        onOpenChange={modal.setLeaveOpen}
         title="Abandonar"
         description="Perderás acceso a sus tareas, miembros y actividades."
         confirmText="Sí, salir"
         cancelText="Cancelar"
-        loading={vm.confirmLoading}
-        onConfirm={vm.confirmLeave}
+        loading={modal.confirmLoading}
+        onConfirm={modal.confirmLeave}
       />
 
       <ConfirmActionDialog
-        open={vm.deleteOpen}
-        onOpenChange={vm.setDeleteOpen}
+        open={modal.deleteOpen}
+        onOpenChange={modal.setDeleteOpen}
         title="Eliminar workspace"
         description="Se borrarán miembros y tareas. Esta acción no se puede deshacer."
         confirmText="Sí, eliminar"
         cancelText="Cancelar"
         variant="destructive"
-        loading={vm.confirmLoading}
-        onConfirm={() => vm.confirmDelete(() => onOpenChange(false))}
+        loading={modal.confirmLoading}
+        onConfirm={() => modal.confirmDelete(() => onOpenChange(false))}
+      />
+
+      <RemoveMemberDialog
+        open={removeOpen}
+        onOpenChange={(v) => {
+          setRemoveOpen(v);
+          if (!v) setMemberToRemove(null);
+        }}
+        member={memberToRemove}
+        loading={removeLoading}
+        onConfirm={handleConfirmRemove}
       />
     </>
   );
 }
-
-export default WorkspaceModal;
