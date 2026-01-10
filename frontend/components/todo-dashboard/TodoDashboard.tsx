@@ -10,7 +10,7 @@ import TaskList from "../task-list/TaskList";
 import TodoStats from "../todo-stats/TodoStats";
 import TodoFooter from "../todos/TodoFooter";
 import TodoHeader from "../todos/TodoHeader";
-import ToolBar from "../todos/ToolBar";
+import ToolBar from "../tool-bar/ToolBar";
 
 /**
  * Página principal del Todo Dashboard.
