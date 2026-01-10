@@ -1,4 +1,3 @@
-// src/features/todo/components/TaskItem.tsx
 "use client";
 
 import { Calendar, Check, Clock, Flag, Trash2, Users } from "lucide-react";
@@ -21,7 +20,7 @@ export default function TaskItem({
   now, // viene del padre (TaskList/Dashboard)
 }: TaskItemProps) {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    // ✅ accesibilidad: permitir toggle con Enter / Space
+    // accesibilidad: permitir toggle con Enter / Space
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       onToggle();
