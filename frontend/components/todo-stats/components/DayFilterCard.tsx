@@ -1,4 +1,3 @@
-// src/features/todo/components/TodoStats/components/DayFilterCard.tsx
 "use client";
 
 import { format } from "date-fns";

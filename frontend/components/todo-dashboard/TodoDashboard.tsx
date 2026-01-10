@@ -19,8 +19,8 @@ import ToolBar from "../tool-bar/ToolBar";
  * - Composición de UI
  * - Orquestación visual del estado (loading / skeleton / content)
  *
- * ❌ No contiene lógica de negocio
- * ✅ Toda la lógica vive en `useTodoDashboard`
+ *  No contiene lógica de negocio
+ *  Toda la lógica vive en `useTodoDashboard`
  */
 export default function TodoDashboard() {
   // Hook orquestador del feature

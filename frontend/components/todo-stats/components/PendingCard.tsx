@@ -1,4 +1,3 @@
-// src/features/todo/components/TodoStats/components/PendingCard.tsx
 "use client";
 
 import { ListTodo, TrendingUp, User } from "lucide-react";

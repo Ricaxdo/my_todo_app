@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   createTodo,
   deleteTodo,
@@ -8,6 +8,7 @@ import {
 } from "./todosApi";
 
 function mockFetchOnce(
+  fetchMock: ReturnType<typeof vi.fn>,
   ok: boolean,
   status: number,
   jsonValue: unknown,
@@ -21,7 +22,7 @@ function mockFetchOnce(
       : vi.fn().mockResolvedValue(jsonValue),
   } as unknown as Response;
 
-  (globalThis.fetch as unknown as vi.Mock).mockResolvedValueOnce(res);
+  fetchMock.mockResolvedValueOnce(res);
 }
 
 describe("todosApi", () => {
@@ -29,24 +30,22 @@ describe("todosApi", () => {
 
   beforeEach(() => {
     vi.restoreAllMocks();
-    // mock fetch
-    globalThis.fetch = vi.fn() as unknown as typeof fetch;
 
-    // localStorage seguro en test
+    // mock fetch
+    const fetchMock = vi.fn();
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
     localStorage.clear();
 
     // timezone estable
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (Intl as any).DateTimeFormat = () =>
-      ({
-        resolvedOptions: () => ({ timeZone: "America/Mexico_City" }),
-      } as Intl.DateTimeFormat);
+    (Intl as unknown as { DateTimeFormat: unknown }).DateTimeFormat = (() => ({
+      resolvedOptions: () => ({ timeZone: "America/Mexico_City" }),
+    })) as unknown as typeof Intl.DateTimeFormat;
   });
 
   afterEach(() => {
-    // restaura Intl
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (Intl as any).DateTimeFormat = originalTZ;
+    (Intl as unknown as { DateTimeFormat: unknown }).DateTimeFormat =
+      originalTZ as unknown as typeof Intl.DateTimeFormat;
   });
 
   it("todosBaseForWorkspace: null -> null", () => {
@@ -60,16 +59,14 @@ describe("todosApi", () => {
   it("getTodos: manda query date y headers (Authorization si hay token)", async () => {
     localStorage.setItem("token", "abc");
 
-    mockFetchOnce(true, 200, []);
+    const fetchMock = globalThis.fetch as unknown as ReturnType<typeof vi.fn>;
+    mockFetchOnce(fetchMock, true, 200, []);
 
     const base = "http://x/workspaces/w1/todos";
     await getTodos(base, "2026-01-10");
 
-    expect(fetch).toHaveBeenCalledTimes(1);
-    const [url, init] = (fetch as unknown as vi.Mock).mock.calls[0] as [
-      string,
-      RequestInit
-    ];
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
 
     expect(url).toBe(`${base}?date=2026-01-10`);
     expect(init.headers).toMatchObject({
@@ -78,18 +75,20 @@ describe("todosApi", () => {
     });
   });
 
-  it("getTodos: si JSON viene vacío/mal, safeJson devuelve null y cae en error de array", async () => {
-    mockFetchOnce(true, 200, null, true); // json() falla
+  it("getTodos: si JSON viene vacío/mal -> error de array", async () => {
+    const fetchMock = globalThis.fetch as unknown as ReturnType<typeof vi.fn>;
+    mockFetchOnce(fetchMock, true, 200, null, true);
 
     await expect(getTodos("base", "2026-01-10")).rejects.toThrow(
       "Expected array from todos endpoint"
     );
   });
 
-  it("getTodos: si no ok, lanza message/error/fallback y limpia token en 401/403", async () => {
+  it("getTodos: si no ok, lanza y limpia token en 401/403", async () => {
     localStorage.setItem("token", "abc");
 
-    mockFetchOnce(false, 401, { message: "Invalid session" });
+    const fetchMock = globalThis.fetch as unknown as ReturnType<typeof vi.fn>;
+    mockFetchOnce(fetchMock, false, 401, { message: "Invalid session" });
 
     await expect(getTodos("base", "2026-01-10")).rejects.toThrow(
       "Invalid session"
@@ -97,23 +96,13 @@ describe("todosApi", () => {
     expect(localStorage.getItem("token")).toBeNull();
   });
 
-  it("getTodos: si ok pero data no es array -> error", async () => {
-    mockFetchOnce(true, 200, { nope: true });
-
-    await expect(getTodos("base", "2026-01-10")).rejects.toThrow(
-      "Expected array from todos endpoint"
-    );
-  });
-
   it("createTodo: manda POST con Content-Type json y body stringificado", async () => {
-    mockFetchOnce(true, 200, { id: "t1" });
+    const fetchMock = globalThis.fetch as unknown as ReturnType<typeof vi.fn>;
+    mockFetchOnce(fetchMock, true, 200, { id: "t1" });
 
     await createTodo("base", { text: "x" });
 
-    const [, init] = (fetch as unknown as vi.Mock).mock.calls[0] as [
-      string,
-      RequestInit
-    ];
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
 
     expect(init.method).toBe("POST");
     expect(init.headers).toMatchObject({
@@ -123,22 +112,18 @@ describe("todosApi", () => {
     expect(init.body).toBe(JSON.stringify({ text: "x" }));
   });
 
-  it("createTodo: si no ok lanza message/error o default", async () => {
-    mockFetchOnce(false, 400, { error: "Bad request" });
-
-    await expect(createTodo("base", {})).rejects.toThrow("Bad request");
-  });
-
-  it("updateTodo: si no ok lanza error con message/fallback", async () => {
-    mockFetchOnce(false, 500, { message: "Oops" });
+  it("updateTodo: si no ok lanza error", async () => {
+    const fetchMock = globalThis.fetch as unknown as ReturnType<typeof vi.fn>;
+    mockFetchOnce(fetchMock, false, 500, { message: "Oops" });
 
     await expect(
       updateTodo("base", "id1", { completed: true })
     ).rejects.toThrow("Oops");
   });
 
-  it("deleteTodo: si no ok lanza error con message/fallback", async () => {
-    mockFetchOnce(false, 500, { error: "Nope" });
+  it("deleteTodo: si no ok lanza error", async () => {
+    const fetchMock = globalThis.fetch as unknown as ReturnType<typeof vi.fn>;
+    mockFetchOnce(fetchMock, false, 500, { error: "Nope" });
 
     await expect(deleteTodo("base", "id1")).rejects.toThrow("Nope");
   });

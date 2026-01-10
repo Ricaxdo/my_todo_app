@@ -1,13 +1,12 @@
-// src/features/todo/components/TodoStats/TodoStats.tsx
 "use client";
 
 import * as React from "react";
 import type { TodoStatsProps } from "./types/todoStats.types";
 
-import DatePickerDialog from "./DatePickerDialog";
-import DayFilterCard from "./DayFilterCard";
-import EfficiencyCard from "./EfficiencyCard";
-import PendingCard from "./PendingCard";
+import DatePickerDialog from "./components/DatePickerDialog";
+import DayFilterCard from "./components/DayFilterCard";
+import EfficiencyCard from "./components/EfficiencyCard";
+import PendingCard from "./components/PendingCard";
 
 /**
  * TodoStats: muestra 3 tarjetas:

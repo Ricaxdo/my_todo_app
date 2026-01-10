@@ -1,9 +1,8 @@
-// src/features/todo/components/TodoStats/components/EfficiencyCard.tsx
 "use client";
 
 import { Sparkles, Target } from "lucide-react";
+import { efficiencyStyles } from "../utils/todoStats.utils";
 import StatCard from "./StatCard";
-import { efficiencyStyles } from "./utils/todoStats.utils";
 
 type EfficiencyCardProps = {
   completionRate: number; // 0..100
