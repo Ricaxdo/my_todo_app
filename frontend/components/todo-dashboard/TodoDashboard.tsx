@@ -5,7 +5,7 @@ import { useTodoDashboard } from "@/components/todo-dashboard"; // API pública 
 import { Card } from "@/components/ui/card";
 
 // Componentes del dominio Todo
-import AddTaskForm from "../todos/AddTaskForm";
+import AddTaskForm from "../add-task-form/AddTaskForm";
 import TaskList from "../todos/TaskList";
 import TodoFooter from "../todos/TodoFooter";
 import TodoHeader from "../todos/TodoHeader";
