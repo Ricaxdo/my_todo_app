@@ -10,7 +10,16 @@ import type { Member } from "./types/addTaskForm.types";
 import { toTitleCase } from "./utils/addTaskForm.utils";
 
 type Props = {
+  /**
+   * Miembros disponibles para asignar.
+   * La lógica de selección vive en el hook (useAssignees).
+   */
   members: Member[];
+
+  /**
+   * Estado y handlers derivados de useAssignees.
+   * Este componente solo consume y renderiza UI.
+   */
   asg: {
     isAssignPopoverOpen: boolean;
     setIsAssignPopoverOpen: (v: boolean) => void;
@@ -21,6 +30,10 @@ type Props = {
   };
 };
 
+/**
+ * Selector de asignados para workspaces compartidos.
+ * Componente controlado: no guarda estado propio de negocio.
+ */
 export default function AssigneesPicker({ members, asg }: Props) {
   const {
     isAssignPopoverOpen,
@@ -34,6 +47,7 @@ export default function AssigneesPicker({ members, asg }: Props) {
   return (
     <Popover open={isAssignPopoverOpen} onOpenChange={setIsAssignPopoverOpen}>
       <PopoverTrigger asChild>
+        {/* Trigger tipo chip con label humano */}
         <button
           type="button"
           className="flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/60 border border-border/40 hover:border-border transition-all text-sm max-[349px]:text-xs font-medium text-foreground/80 hover:text-foreground shrink-0"
@@ -49,7 +63,7 @@ export default function AssigneesPicker({ members, asg }: Props) {
           Asignar a:
         </div>
 
-        {/* TODOS */}
+        {/* Opción global: Todos */}
         <button
           type="button"
           onClick={toggleAll}
@@ -63,6 +77,7 @@ export default function AssigneesPicker({ members, asg }: Props) {
 
         <div className="my-1 h-px bg-border" />
 
+        {/* Lista de miembros */}
         <div className="max-h-56 overflow-auto">
           {members.map((m) => (
             <button

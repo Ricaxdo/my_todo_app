@@ -13,6 +13,10 @@ import { CalendarIcon, ChevronDown } from "lucide-react";
 import { startOfDay } from "./utils/addTaskForm.utils";
 
 type Props = {
+  /**
+   * Estado/control externo (viene del hook useDueDate).
+   * Este componente solo renderiza UI y dispara eventos.
+   */
   due: {
     dueDateOption: "today" | "week" | "custom";
     setDueDateOption: (v: "today" | "week" | "custom") => void;
@@ -23,6 +27,10 @@ type Props = {
   };
 };
 
+/**
+ * Selector de vencimiento con 3 presets (Hoy / 1 Semana / Custom).
+ * UI controlada: el estado vive arriba (hook / parent).
+ */
 export default function DueDatePicker({ due }: Props) {
   const {
     dueDateOption,
@@ -33,6 +41,11 @@ export default function DueDatePicker({ due }: Props) {
     handleCustomDateSelect,
   } = due;
 
+  /**
+   * Label que se muestra en el trigger:
+   * - Presets: texto fijo
+   * - Custom: fecha formateada (locale español)
+   */
   const getLabel = () => {
     if (dueDateOption === "today") return "Hoy";
     if (dueDateOption === "week") return "1 Semana";
@@ -42,6 +55,7 @@ export default function DueDatePicker({ due }: Props) {
   return (
     <Popover open={isDatePopoverOpen} onOpenChange={setIsDatePopoverOpen}>
       <PopoverTrigger asChild>
+        {/* Trigger compacto estilo "chip" */}
         <button
           type="button"
           className="flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/60 border border-border/40 hover:border-border transition-all text-sm max-[349px]:text-xs font-medium text-foreground/80 hover:text-foreground shrink-0"
@@ -54,6 +68,7 @@ export default function DueDatePicker({ due }: Props) {
 
       <PopoverContent className="w-auto p-0" align="start">
         <div className="flex flex-col">
+          {/* Presets rápidos: cambian el modo de cálculo en el hook */}
           <div className="p-2 border-b border-border space-y-1">
             <button
               type="button"
@@ -92,12 +107,17 @@ export default function DueDatePicker({ due }: Props) {
             </button>
           </div>
 
+          {/* Calendario solo cuando el modo es custom */}
           {dueDateOption === "custom" && (
             <div className="p-3">
               <Calendar
                 mode="single"
                 selected={customDate}
                 onSelect={handleCustomDateSelect}
+                /**
+                 * Regla UX:
+                 * No permitir fechas pasadas (normalizado a startOfDay para evitar bugs por hora).
+                 */
                 disabled={(date: Date) =>
                   startOfDay(date) < startOfDay(new Date())
                 }

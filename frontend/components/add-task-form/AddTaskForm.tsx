@@ -11,6 +11,12 @@ import AssigneesPicker from "./AssigneesPicker";
 import DueDatePicker from "./DueDatePicker";
 import PrioritySwitch from "./PrioritySwitch";
 
+/**
+ * AddTaskForm (presentational + orchestration):
+ * - Renderiza el formulario y compone controles.
+ * - La lógica de negocio vive en hooks (useDueDate / useAssignees).
+ * - Componente controlado: el estado principal llega por props.
+ */
 export default function AddTaskForm(props: AddTaskFormProps) {
   const {
     newTask,
@@ -27,8 +33,14 @@ export default function AddTaskForm(props: AddTaskFormProps) {
     setAssignees,
   } = props;
 
+  /** Hook de vencimiento: presets (hoy/semana) + fecha custom + popover state */
   const due = useDueDate({ dueDate, setDueDate });
 
+  /**
+   * Hook de asignados:
+   * - Personal workspace: fuerza "asignado a mí"
+   * - Shared workspace: permite multi-selección y "Todos"
+   */
   const asg = useAssignees({
     isPersonalWorkspace,
     meId,
@@ -37,14 +49,17 @@ export default function AddTaskForm(props: AddTaskFormProps) {
     setAssignees,
   });
 
+  /** Posición del slider (UI) derivada de la prioridad */
   const sliderPosition = prioritySliderPosition(priority);
 
   return (
     <form onSubmit={onSubmit} className="relative group">
+      {/* Glow decorativo en hover (no afecta layout) */}
       <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/5 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
+      {/* Card del form: mejora UX con focus-within para resaltar al escribir */}
       <div className="relative p-3 bg-card border border-border rounded-xl shadow-2xl transition-all focus-within:ring-1 focus-within:ring-white/20 focus-within:border-white/20">
-        {/* Title input */}
+        {/* Input principal: título/descripcion corta de la tarea */}
         <div className="flex items-center gap-3">
           <div className="p-3 bg-secondary rounded-lg text-muted-foreground shrink-0">
             <Plus className="w-5 h-5" />
@@ -59,7 +74,7 @@ export default function AddTaskForm(props: AddTaskFormProps) {
           />
         </div>
 
-        {/* Controls row */}
+        {/* Controles secundarios: prioridad / vencimiento / asignados */}
         <div className="mt-3 flex items-center gap-3 flex-wrap">
           <PrioritySwitch
             priority={priority}
@@ -69,6 +84,8 @@ export default function AddTaskForm(props: AddTaskFormProps) {
 
           <DueDatePicker due={due} />
 
+          {/* Regla de negocio en UI:
+              En workspace personal NO se muestran asignados (siempre soy yo). */}
           {!isPersonalWorkspace && (
             <AssigneesPicker members={members} asg={asg} />
           )}
