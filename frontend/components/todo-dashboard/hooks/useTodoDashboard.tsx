@@ -14,7 +14,11 @@ import {
   updateTodo,
 } from "../api/todosApi";
 import { normalizeTasks, taskIdOf } from "../mappers/todoMapper";
-import { startOfDay, toDayStringLocal } from "../utils/date";
+import {
+  startOfDay,
+  toDayStringLocal,
+  toUtcBucketDayFromLocalDay,
+} from "../utils/date";
 
 type Filter = "all" | "active" | "completed";
 
@@ -42,6 +46,8 @@ export function useTodoDashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isPersonalWorkspace = currentWorkspace?.isPersonal === true;
+
   // =========================
   // Workspace switching UX
   // =========================
@@ -68,9 +74,7 @@ export function useTodoDashboard() {
   const [meIdInWorkspace, setMeIdInWorkspace] = useState<string | null>(null);
   const [assignees, setAssignees] = useState<string[]>([]);
 
-  const myUserId = currentWorkspace?.isPersonal
-    ? meIdFromAuth
-    : meIdInWorkspace;
+  const myUserId = isPersonalWorkspace ? meIdFromAuth : meIdInWorkspace;
 
   const todosBase = useMemo(
     () => todosBaseForWorkspace(currentWorkspaceId),
@@ -146,8 +150,9 @@ export function useTodoDashboard() {
     setError(null);
 
     try {
-      const day = toDayStringLocal(selectedDate);
+      const day = toUtcBucketDayFromLocalDay(selectedDate);
       const data = await getTodos(todosBase, day, ctrl.signal);
+
       setTasks(normalizeTasks(data as BackendTask[]));
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return;
@@ -170,7 +175,7 @@ export function useTodoDashboard() {
       e.preventDefault();
       if (!newTask.trim() || !todosBase) return;
 
-      const assigneesToSend = currentWorkspace?.isPersonal
+      const assigneesToSend = isPersonalWorkspace
         ? meIdFromAuth
           ? [meIdFromAuth]
           : undefined
@@ -185,7 +190,8 @@ export function useTodoDashboard() {
           text: newTask.trim(),
           priority,
           category: "General",
-          dueDate: toDayStringLocal(dueDate),
+          // ✅ la tarea se crea para el día actualmente visible
+          dueDate: toDayStringLocal(selectedDate),
           ...(assigneesToSend ? { assignees: assigneesToSend } : {}),
         });
 
@@ -194,7 +200,9 @@ export function useTodoDashboard() {
 
         setNewTask("");
         setPriority("low");
-        setDueDate(startOfDay(new Date()));
+
+        // ✅ mantener el picker alineado con el día del tablero
+        setDueDate(startOfDay(selectedDate));
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error creating task");
       }
@@ -202,11 +210,11 @@ export function useTodoDashboard() {
     [
       newTask,
       todosBase,
-      currentWorkspace?.isPersonal,
+      isPersonalWorkspace,
       meIdFromAuth,
       assignees,
       priority,
-      dueDate,
+      selectedDate,
     ]
   );
 
@@ -328,7 +336,7 @@ export function useTodoDashboard() {
 
     // workspace
     currentWorkspace,
-    isPersonalWorkspace: currentWorkspace?.isPersonal === true,
+    isPersonalWorkspace,
     meId: meIdInWorkspace,
 
     // ux
