@@ -1,10 +1,16 @@
 "use client";
 
 import { useAuth } from "@/state/auth/auth-context";
-import type { WorkspaceMember } from "@/state/workspaces/workspace-context";
 import { useWorkspaces } from "@/state/workspaces/workspace-context";
 import type { BackendTask, Priority, Task } from "@/types/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+type WorkspaceMember = {
+  userId: string;
+  name: string;
+  lastName?: string | null;
+  isYou?: boolean;
+};
 
 import {
   createTodo,
@@ -80,6 +86,12 @@ export function useTodoDashboard() {
     () => todosBaseForWorkspace(currentWorkspaceId),
     [currentWorkspaceId]
   );
+
+  const canCreateOnSelectedDay = useMemo(() => {
+    const today = startOfDay(new Date()).getTime();
+    const selected = startOfDay(selectedDate).getTime();
+    return selected === today;
+  }, [selectedDate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -173,6 +185,13 @@ export function useTodoDashboard() {
   const handleAddTask = useCallback(
     async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
+
+      // ✅ Guardia dura: no crear tasks si no es hoy
+      if (!canCreateOnSelectedDay) {
+        setError("Solo puedes crear tareas en el día actual.");
+        return;
+      }
+
       if (!newTask.trim() || !todosBase) return;
 
       const assigneesToSend = isPersonalWorkspace
@@ -190,7 +209,6 @@ export function useTodoDashboard() {
           text: newTask.trim(),
           priority,
           category: "General",
-          // ✅ la tarea se crea para el día actualmente visible
           dueDate: toDayStringLocal(selectedDate),
           ...(assigneesToSend ? { assignees: assigneesToSend } : {}),
         });
@@ -200,14 +218,13 @@ export function useTodoDashboard() {
 
         setNewTask("");
         setPriority("low");
-
-        // ✅ mantener el picker alineado con el día del tablero
         setDueDate(startOfDay(selectedDate));
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error creating task");
       }
     },
     [
+      canCreateOnSelectedDay, // ✅ IMPORTANTE
       newTask,
       todosBase,
       isPersonalWorkspace,
