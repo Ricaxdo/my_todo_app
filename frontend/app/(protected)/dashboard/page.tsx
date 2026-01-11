@@ -1,5 +1,5 @@
 import { RequireAuth } from "@/components/auth/RequireAuth";
-import TodoDashboard from "@/components/todos/TodoDashboard"; // ajusta ruta real
+import TodoDashboard from "@/components/todo-dashboard/TodoDashboard";
 
 export default function DashboardPage() {
   return (

@@ -1,4 +1,4 @@
-import LoginForm from "@/components/auth/LoginForm";
+import LoginForm from "@/components/auth/login/LoginForm";
 import { RedirectIfAuth } from "@/components/auth/RedirectIfAuth";
 import type { Metadata } from "next";
 
