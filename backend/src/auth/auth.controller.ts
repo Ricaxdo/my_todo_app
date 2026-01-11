@@ -141,3 +141,31 @@ export async function me(req: AuthRequest, res: Response, next: NextFunction) {
     return next(err);
   }
 }
+
+export async function deleteMe(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const userId = req.user?._id;
+    if (!userId) throw unauthorized("authorization required");
+
+    const user = await UserModel.findById(userId).select("personalWorkspaceId");
+    if (!user) throw unauthorized("authorization required");
+
+    const personalWorkspaceId = user.personalWorkspaceId?.toString() ?? null;
+
+    await WorkspaceMemberModel.deleteMany({ userId });
+
+    if (personalWorkspaceId) {
+      await WorkspaceModel.findByIdAndDelete(personalWorkspaceId);
+    }
+
+    await UserModel.findByIdAndDelete(userId);
+
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    return next(err);
+  }
+}

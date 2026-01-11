@@ -14,6 +14,8 @@ import { scrollToId } from "./nav-scroll";
 import UserMenu from "./UserMenu";
 import WorkspaceSwitch from "./WorkspaceSwitch";
 
+import { authApi } from "@/services/auth/auth.api";
+
 /**
  * TodoNavBar
  * - Barra superior del dashboard de tareas
@@ -39,8 +41,6 @@ export default function TodoNavBar() {
     return user.email ? user.email.split("@")[0] : "Cuenta";
   }, [user]);
 
-  const phone = user?.phone ?? null;
-
   // ✅ Workspace compartido = extra workspace (no personal)
   const sharedWorkspace = useMemo(() => {
     const extra = workspaces.find((w) => !w.isPersonal);
@@ -62,10 +62,19 @@ export default function TodoNavBar() {
     scrollToId("home", { duration: 600, extraOffset: 12, navId: "app-navbar" });
   }
 
-  function handleDeleteAccount() {
-    // 🔥 hotfix: por ahora placeholder.
-    // Ideal: abrir confirm dialog + llamar endpoint real + logout + redirect.
-    console.log("Eliminar cuenta (pendiente de implementar)");
+  async function handleDeleteAccount() {
+    try {
+      await authApi.deleteMe();
+
+      // Limpieza local
+      logout();
+      resetDashboardState();
+
+      router.replace("/login");
+    } catch (err) {
+      console.error(err);
+      // aquí puedes meter toast/error banner si quieres
+    }
   }
 
   return (
@@ -118,13 +127,13 @@ export default function TodoNavBar() {
       <UserMenu
         isLoading={isAuthLoading}
         displayName={displayName}
-        email={user?.email ?? null}
-        phone={phone}
+        email={user?.email}
+        phone={user?.phone ?? null}
         sharedWorkspace={sharedWorkspace}
         workspaceOpen={workspaceOpen}
         setWorkspaceOpen={setWorkspaceOpen}
         onLogout={handleLogout}
-        onDeleteAccount={handleDeleteAccount} // ✅ opcional, pero ya lo pasamos
+        onDeleteAccount={handleDeleteAccount}
       />
     </nav>
   );
