@@ -2,10 +2,10 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { formatActivity } from "@/lib/activity.format";
 import type { ActivityItem } from "@/types/activity.types"; // 👈 usa el tipo real
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
+import { formatActivity } from "../utils/activity.format";
 
 type ActivityState = {
   isLoading: boolean;

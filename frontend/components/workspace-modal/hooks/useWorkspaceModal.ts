@@ -1,6 +1,6 @@
-import { useWorkspaceActivity } from "@/hooks/useWorkspaceActivity";
 import type { Workspace } from "@/state/workspaces/workspace-context";
 import { useLayoutEffect, useMemo, useState } from "react";
+import { useWorkspaceActivity } from "./useWorkspaceActivity";
 
 import type { TabKey } from "../types/workspaceModal.types";
 import {

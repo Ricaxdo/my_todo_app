@@ -1,4 +1,3 @@
-// features/auth/auth-api.ts
 import { apiFetch, type ApiError } from "@/services/api/clients";
 
 export type Me = {
@@ -60,7 +59,7 @@ export function getAuthErrorMessage(err: unknown): string {
 }
 
 export const authApi = {
-  // ✅ backend devuelve { user: {...} }
+  //  backend devuelve { user: {...} }
   me: async () => {
     const data = await apiFetch<MeResponse>("/auth/me");
     return data.user;
@@ -76,14 +75,14 @@ export const authApi = {
     return res;
   },
 
-  // ✅ backend devuelve { token, personalWorkspaceId }
+  //  backend devuelve { token, personalWorkspaceId }
   signup: async (payload: SignupPayload) => {
     const res = await apiFetch<SignupResponse>("/auth/signup", {
       method: "POST",
       body: JSON.stringify(payload),
     });
 
-    saveToken(res.token); // 👈 CLAVE
+    saveToken(res.token);
     return res;
   },
 
