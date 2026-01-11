@@ -2,7 +2,7 @@
 
 import { BarChart3, ListChecks } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 
@@ -19,7 +19,7 @@ import WorkspaceSwitch from "./WorkspaceSwitch";
  * - Barra superior del dashboard de tareas
  * - Acciones: scroll a secciones (progress/tasks/home)
  * - Switch de workspace (si hay 2)
- * - Menú usuario (workspace modal + logout)
+ * - Menú usuario (perfil + workspace modal + logout)
  */
 export default function TodoNavBar() {
   const router = useRouter();
@@ -32,17 +32,25 @@ export default function TodoNavBar() {
 
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
 
-  const displayName =
-    user?.name?.trim() || (user?.email ? user.email.split("@")[0] : "Cuenta");
+  const displayName = useMemo(() => {
+    if (!user) return "Cuenta";
+    const full = `${user.name ?? ""} ${user.lastName ?? ""}`.trim();
+    if (full) return full;
+    return user.email ? user.email.split("@")[0] : "Cuenta";
+  }, [user]);
+
+  const phone = user?.phone ?? null;
+
+  // ✅ Workspace compartido = extra workspace (no personal)
+  const sharedWorkspace = useMemo(() => {
+    const extra = workspaces.find((w) => !w.isPersonal);
+    if (!extra) return null;
+    return { id: extra.id, name: extra.name };
+  }, [workspaces]);
 
   function handleLogout() {
-    // 1) limpiar auth
     logout();
-
-    // 2) limpiar UI/state del dashboard
     resetDashboardState();
-
-    // 3) redirigir
     router.replace("/login");
   }
 
@@ -51,8 +59,13 @@ export default function TodoNavBar() {
 
     setCurrentWorkspaceId(id);
 
-    // UX: al cambiar de workspace, subimos a “home”
     scrollToId("home", { duration: 600, extraOffset: 12, navId: "app-navbar" });
+  }
+
+  function handleDeleteAccount() {
+    // 🔥 hotfix: por ahora placeholder.
+    // Ideal: abrir confirm dialog + llamar endpoint real + logout + redirect.
+    console.log("Eliminar cuenta (pendiente de implementar)");
   }
 
   return (
@@ -105,10 +118,13 @@ export default function TodoNavBar() {
       <UserMenu
         isLoading={isAuthLoading}
         displayName={displayName}
-        email={user?.email}
+        email={user?.email ?? null}
+        phone={phone}
+        sharedWorkspace={sharedWorkspace}
         workspaceOpen={workspaceOpen}
         setWorkspaceOpen={setWorkspaceOpen}
         onLogout={handleLogout}
+        onDeleteAccount={handleDeleteAccount} // ✅ opcional, pero ya lo pasamos
       />
     </nav>
   );
