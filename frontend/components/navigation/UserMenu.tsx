@@ -75,7 +75,6 @@ export default function UserMenu({
 
   return (
     <>
-      {/* ✅ Logout Modal (centrado perfecto, con overlay real) */}
       <Dialog open={logoutOpen} onOpenChange={() => {}}>
         <DialogContent
           className="max-w-sm [&>button]:hidden"
