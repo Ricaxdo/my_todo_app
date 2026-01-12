@@ -2,14 +2,11 @@
 
 import TodoNavBar from "@/components/navigation/TodoNavBar";
 import { useTodoDashboard } from "@/components/todo-dashboard";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { CalendarClock } from "lucide-react";
 
 import AddTaskForm from "../add-task-form/AddTaskForm";
 import TaskList from "../task-list/TaskList";
 import TodoStats from "../todo-stats/TodoStats";
-import TodoFooter from "../todos/TodoFooter";
 import TodoHeader from "../todos/TodoHeader";
 import ToolBar from "../tool-bar/ToolBar";
 
@@ -53,10 +50,14 @@ export default function TodoDashboard() {
   const isToday = isSameDay(selectedDate, new Date());
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/20">
+    // ≤800: scroll normal (desk-lock no aplica)
+    // ≥801: lock global y main interno scrollea
+    <div className="min-h-[100dvh] bg-background text-foreground font-sans selection:bg-primary/20 desk-lock">
       <div className="fixed inset-0 bg-grid-white pointer-events-none opacity-[0.05]" />
 
-      <div className="relative w-full px-4 pb-6 lg:px-8 lg:pb-10">
+      {/* Wrapper general (✅ ahora se vuelve “shell” desde 801 con CSS, no con lg:) */}
+      <div className="relative w-full px-4 pb-6 lg:px-8 lg:pb-10 desk-shell">
+        {/* Navbar sticky */}
         <div
           id="app-navbar"
           className="sticky top-0 z-50 -mx-4 lg:-mx-8 px-4 lg:px-8 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/60 bg-background/80 border-b border-border"
@@ -66,24 +67,27 @@ export default function TodoDashboard() {
           </div>
         </div>
 
-        <div className="max-w-[1600px] mx-auto">
-          {/* Header section - full width on all screens */}
+        {/* Contenido (✅ flex-1 desde 801 con desk-content) */}
+        <div className="max-w-[1600px] mx-auto w-full desk-content">
+          {/* Header */}
           <section id="home" className="pt-5 pb-4 lg:pt-5 lg:pb-3">
             <TodoHeader />
           </section>
 
           {isWorkspaceSwitching ? (
-            <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6 lg:gap-8">
-              {/* Left sidebar loading */}
+            // =========================
+            // LOADING
+            // =========================
+            <div className="grid grid-cols-1 grid-2cols-800 gap-6 gap-8-800 flex-1 min-h-0">
               <aside className="space-y-6">
-                <Card className="p-6 space-y-3 lg:sticky lg:top-20">
+                <Card className="p-6 space-y-3 sticky-800">
                   <div className="h-4 w-40 animate-pulse rounded bg-muted" />
                   <div className="h-24 w-full animate-pulse rounded bg-muted" />
                 </Card>
               </aside>
 
-              {/* Main content loading */}
-              <main className="space-y-6">
+              {/* ≤800: body scrollea; ≥801: main scrollea */}
+              <main className="space-y-6 desk-main-scroll scrollbar-hover">
                 <Card className="p-6 space-y-3">
                   <div className="h-4 w-32 animate-pulse rounded bg-muted" />
                   <div className="h-10 w-full animate-pulse rounded bg-muted" />
@@ -96,12 +100,17 @@ export default function TodoDashboard() {
                   <div className="h-10 w-full animate-pulse rounded bg-muted" />
                   <div className="h-10 w-full animate-pulse rounded bg-muted" />
                 </Card>
+
+                <div className="h-6" />
               </main>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6 lg:gap-8">
+            // =========================
+            // NORMAL
+            // =========================
+            <div className="grid grid-cols-1 grid-2cols-800 gap-6 gap-8-800 flex-1 min-h-0">
               <aside className="space-y-6">
-                <div className="lg:sticky lg:top-20">
+                <div className="sticky-800">
                   <section id="progress">
                     <TodoStats
                       activeCount={activeCount}
@@ -114,8 +123,8 @@ export default function TodoDashboard() {
                 </div>
               </aside>
 
-              <main className="space-y-6 min-w-0">
-                {/* Add Task Form or Date Warning */}
+              {/* ✅ Scroll interno desde 801 */}
+              <main className="space-y-6 desk-main-scroll scrollbar-hover">
                 {isToday ? (
                   <AddTaskForm
                     newTask={newTask}
@@ -133,32 +142,10 @@ export default function TodoDashboard() {
                   />
                 ) : (
                   <Card className="p-6">
-                    <div className="flex items-start gap-4">
-                      <div className="mt-0.5 rounded-full border border-border bg-muted/40 p-2">
-                        <CalendarClock className="h-6 w-6" />
-                      </div>
-
-                      <div className="flex-1 space-y-2">
-                        <div className="font-semibold text-xl">
-                          No puedes crear tareas en días pasados
-                        </div>
-
-                        <div className="flex flex-wrap gap-2 pt-2 justify-end">
-                          <Button
-                            type="button"
-                            onClick={() =>
-                              setSelectedDate(startOfDay(new Date()))
-                            }
-                          >
-                            Ir a hoy
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
+                    No puedes crear tareas en días pasados.
                   </Card>
                 )}
 
-                {/* Tasks Section */}
                 <section id="tasks" className="relative space-y-6">
                   <div id="tasks-anchor" className="absolute -top-6 h-1 w-1" />
 
@@ -176,13 +163,11 @@ export default function TodoDashboard() {
                     meId={meId}
                   />
                 </section>
+
+                <div className="h-6" />
               </main>
             </div>
           )}
-
-          <div className="pt-10 lg:pt-16">
-            <TodoFooter />
-          </div>
         </div>
       </div>
     </div>

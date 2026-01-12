@@ -65,7 +65,7 @@ export default function TaskItem({
       {/* Main content */}
       <div className="flex-1 min-w-0">
         <p
-          className={`text-lg md:text-base font-medium truncate transition-all ${
+          className={`text-lg font-medium truncate transition-all ${
             task.completed
               ? "text-muted-foreground line-through"
               : "text-foreground"

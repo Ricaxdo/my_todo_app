@@ -4,17 +4,12 @@ import { cn } from "@/lib/utils";
 import type * as React from "react";
 
 type StatCardProps = {
-  /** Icon wrapper (ya con sus bg/text si quieres) */
   icon: React.ReactNode;
-  /** Etiqueta superior derecha */
   label: string;
-  /** Contenido principal del card */
   children: React.ReactNode;
 
-  /** Gradiente decorativo */
   decoClassName?: string;
 
-  /** Si es botón, pasa onClick y type */
   asButton?: boolean;
   onClick?: () => void;
   type?: "button" | "submit" | "reset";
@@ -22,10 +17,6 @@ type StatCardProps = {
   className?: string;
 };
 
-/**
- * Card base para stats: borde + hover + header (icon + label) + "blob" decorativo.
- * Mantener este “frame” único hace que los otros mini-cards solo definan contenido.
- */
 export default function StatCard({
   icon,
   label,
@@ -37,20 +28,20 @@ export default function StatCard({
   className,
 }: StatCardProps) {
   const base =
-    "group relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-card to-card/50 p-4 transition-all hover:shadow-lg hover:border-primary/30";
+    "group relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-card to-card/50 p-4 w-full min-w-0 transition-all hover:shadow-lg hover:border-primary/30";
 
   const content = (
     <>
-      <div className="flex items-center justify-between mb-3">
-        {icon}
-        <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+      <div className="flex items-center justify-between mb-3 min-w-0 gap-3">
+        <div className="shrink-0">{icon}</div>
+
+        <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase truncate">
           {label}
         </span>
       </div>
 
       {children}
 
-      {/* Decorative blob (opcional) */}
       {decoClassName ? (
         <div
           className={cn(

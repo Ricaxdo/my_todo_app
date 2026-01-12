@@ -294,15 +294,13 @@ export function useTodoDashboard() {
   }, [tasks, activeFilter]);
 
   const stats = useMemo(() => {
-    const completedCount = filteredTasks.filter((t) => t.completed).length;
-    const activeCount = filteredTasks.length - completedCount;
+    const completedCount = tasks.filter((t) => t.completed).length;
+    const activeCount = tasks.length - completedCount;
 
     const completionRate =
-      filteredTasks.length > 0
-        ? Math.round((completedCount / filteredTasks.length) * 100)
-        : 0;
+      tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
 
-    const userActiveCount = filteredTasks.filter((t) => {
+    const userActiveCount = tasks.filter((t) => {
       if (t.completed) return false;
       if (!myUserId) return false;
       const ids = Array.isArray(t.assignees) ? t.assignees : [];
@@ -310,7 +308,7 @@ export function useTodoDashboard() {
     }).length;
 
     return { completedCount, activeCount, completionRate, userActiveCount };
-  }, [filteredTasks, myUserId]);
+  }, [tasks, myUserId]);
 
   // Solo resetea el estado del dashboard (logout real: auth-context)
   const resetDashboardState = useCallback(() => {

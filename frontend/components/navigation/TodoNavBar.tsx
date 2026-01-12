@@ -1,10 +1,7 @@
 "use client";
 
-import { BarChart3, ListChecks } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-
-import { Button } from "@/components/ui/button";
 
 import { useTodoDashboard } from "@/components/todo-dashboard/hooks/useTodoDashboard";
 import { useAuth } from "@/state/auth/auth-context";
@@ -41,7 +38,6 @@ export default function TodoNavBar() {
     return user.email ? user.email.split("@")[0] : "Cuenta";
   }, [user]);
 
-  // ✅ Workspace compartido = extra workspace (no personal)
   const sharedWorkspace = useMemo(() => {
     const extra = workspaces.find((w) => !w.isPersonal);
     if (!extra) return null;
@@ -91,29 +87,6 @@ export default function TodoNavBar() {
 
       {/* Acciones (centro) */}
       <div className="flex items-center justify-end gap-0 flex-1 min-w-0">
-        <Button
-          variant="ghost"
-          onClick={() =>
-            scrollToId("progress", { duration: 1000, extraOffset: 12 })
-          }
-        >
-          <BarChart3 className="block sm:hidden h-5 w-5" />
-          <span className="hidden sm:inline">Progress</span>
-          <span className="sr-only">Progress</span>
-        </Button>
-
-        <Button
-          variant="ghost"
-          onClick={() =>
-            scrollToId("tasks-anchor", { duration: 1000, extraOffset: 12 })
-          }
-          className="px-2 sm:px-3"
-        >
-          <ListChecks className="block sm:hidden h-5 w-5" />
-          <span className="hidden sm:inline">Tasks</span>
-          <span className="sr-only">Tasks</span>
-        </Button>
-
         {/* Switch de workspace (o Home si no hay 2) */}
         <WorkspaceSwitch
           workspaces={workspaces}

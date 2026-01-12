@@ -67,7 +67,7 @@ export default function TaskList({
   // empty state primero (evita map innecesario)
   if (sortedTasks.length === 0) {
     return (
-      <div className="space-y-2 min-h-[300px]">
+      <div className="space-y-2">
         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground border border-dashed border-border rounded-xl">
           <LayoutGrid className="w-10 h-10 mb-4 opacity-20" />
           <p>No tasks found in this view</p>
@@ -77,7 +77,7 @@ export default function TaskList({
   }
 
   return (
-    <div className="space-y-2 min-h-[300px]">
+    <div className="space-y-2">
       {sortedTasks.map((task) => {
         const id = taskIdOf(task);
 
