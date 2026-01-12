@@ -1,18 +1,30 @@
-// src/tasks/task.store.ts
 import { DateTime } from "luxon";
 import mongoose from "mongoose";
 import { TaskModel, type TaskDocument } from "./task.model";
 import type { Priority, Task } from "./task.types";
 
+/**
+ * Convierte un array de strings a ObjectId[] validando primero.
+ * - Filtra ids inválidos (evita que Mongo truene por casting)
+ * - Crea ObjectIds reales para guardar/query
+ */
 function toObjectIds(ids: string[]): mongoose.Types.ObjectId[] {
   return ids
     .filter((id) => mongoose.Types.ObjectId.isValid(id))
     .map((id) => new mongoose.Types.ObjectId(id));
 }
 
+/** Timezone default del backend (puede ser override por header X-Timezone). */
 const DEFAULT_TZ = "America/Mexico_City";
 
-/** Rango del día (start/end) en timezone tz -> convertido a JS Date (instantes UTC) */
+/**
+ * Rango del día (start/end) interpretado en timezone `tz`.
+ *
+ * Importante:
+ * - Luxon maneja bien DST y offsets.
+ * - toJSDate() devuelve instantes absolutos (Date en UTC internamente),
+ *   listos para usar en Mongo con $gte/$lte.
+ */
 function dayRangeInTz(day: Date, tz: string) {
   const dt = DateTime.fromJSDate(day, { zone: tz });
   const from = dt.startOf("day").toJSDate();
@@ -20,14 +32,23 @@ function dayRangeInTz(day: Date, tz: string) {
   return { from, to };
 }
 
-/** default: fin de HOY en tz (guardado como Date) */
+/**
+ * Default para dueDate: fin de HOY en `tz`.
+ * Útil cuando el FE no manda dueDate (tareas “para hoy”).
+ */
 function endOfTodayInTz(tz: string) {
   return DateTime.now().setZone(tz).endOf("day").toJSDate();
 }
 
 /**
- * Si viene ISO con hora -> lo respetamos.
- * Si viene solo fecha (YYYY-MM-DD) -> la tratamos como fin de ese día en tz.
+ * Normaliza la entrada de dueDate que llega desde el FE.
+ *
+ * Reglas:
+ * - Si viene "YYYY-MM-DD" => lo interpretamos como fin de ese día en `tz`
+ *   (así aparece en el día correcto en el dashboard).
+ * - Si viene ISO completo (con o sin timezone):
+ *   - con timezone: se respeta tal cual
+ *   - sin timezone: Luxon lo interpreta en `tz`
  */
 function parseDueDateInput(input: string, tz: string): Date {
   // "2025-12-24" (date-only)
@@ -41,7 +62,15 @@ function parseDueDateInput(input: string, tz: string): Date {
   return dt.toJSDate();
 }
 
+/**
+ * Mapper: TaskDocument (Mongo/Mongoose) -> Task (DTO para FE).
+ * Normaliza:
+ * - id como string
+ * - createdAt/updatedAt/dueDate como ISO string
+ * - assignees como string[]
+ */
 function mapDocToTask(doc: TaskDocument & { _id: unknown }): Task {
+  // createdAt debe existir; este fallback es defensivo.
   const createdAtIso =
     doc.createdAt instanceof Date
       ? doc.createdAt.toISOString()
@@ -57,23 +86,18 @@ function mapDocToTask(doc: TaskDocument & { _id: unknown }): Task {
     category: doc.category,
     createdAt: createdAtIso,
 
-    // ✅ NUEVO (siempre)
+    /**
+     * Asignees siempre presente (para evitar null-checks en FE).
+     */
     assignees: Array.isArray(doc.assignees)
       ? doc.assignees.map((id) => String(id))
       : [],
   };
-  result.assignees = Array.isArray(doc.assignees)
-    ? doc.assignees.map((id) => String(id))
-    : [];
 
-  if (doc.updatedAt) {
-    const updatedAtIso =
-      doc.updatedAt instanceof Date
-        ? doc.updatedAt.toISOString()
-        : new Date(doc.updatedAt).toISOString();
-    result.updatedAt = updatedAtIso;
-  }
-
+  /**
+   * dueDate:
+   * - string ISO o null (si es legacy / no tiene dueDate)
+   */
   result.dueDate = doc.dueDate
     ? doc.dueDate instanceof Date
       ? doc.dueDate.toISOString()
@@ -84,10 +108,12 @@ function mapDocToTask(doc: TaskDocument & { _id: unknown }): Task {
 }
 
 /**
- * Opción B (timezone-safe):
- * - Un task "vive" en el día donde cae su dueDate (fin del día local por default).
- * - Para ver tasks de un día, filtramos dueDate dentro del rango (start/end) en tz.
- * - Legacy: tasks sin dueDate => solo aparecen el día que fueron creadas (rango en tz).
+ * Lista tasks de un workspace para un día específico (timezone-safe).
+ *
+ * Regla de producto:
+ * - Una task "vive" en el día donde cae su dueDate (en tz).
+ * - Para ver tasks de un día: dueDate dentro del rango del día.
+ * - Legacy: tasks sin dueDate => solo aparecen el día que fueron creadas.
  */
 export async function getWorkspaceTasks(
   workspaceId: string,
@@ -100,20 +126,31 @@ export async function getWorkspaceTasks(
   const docs = await TaskModel.find({
     workspaceId,
     $or: [
-      // ✅ tasks “modernas”: aparecen en el día donde cae su dueDate
+      // ✅ modernas: filtramos por el día donde cae su dueDate
       { dueDate: { $gte: from, $lte: to } },
 
-      // ✅ legacy: sin dueDate -> solo día de creación
+      // ✅ legacy: sin dueDate => día de creación
       { dueDate: { $exists: false }, createdAt: { $gte: from, $lte: to } },
       { dueDate: null, createdAt: { $gte: from, $lte: to } },
     ],
   })
-    .sort({ createdAt: -1 })
+    .sort({ createdAt: -1 }) // orden por creación (no por dueDate)
     .exec();
 
   return docs.map(mapDocToTask);
 }
 
+/**
+ * Crea una task dentro de un workspace.
+ *
+ * - dueDate:
+ *   - si viene: se normaliza con parseDueDateInput
+ *   - si no viene: default fin de HOY en tz
+ *
+ * - assignees:
+ *   - si no vienen: default [userId] (creador)
+ *   - si vienen: se valida que sean ObjectIds válidos
+ */
 export async function createTaskInWorkspace(
   workspaceId: string,
   userId: string,
@@ -151,6 +188,15 @@ export async function createTaskInWorkspace(
   return mapDocToTask(doc);
 }
 
+/**
+ * Actualiza una task (parcial) dentro del workspace.
+ *
+ * - Usa $set/$unset según lo que venga:
+ *   - dueDate === null => unset (vuelve legacy: "sin dueDate")
+ *   - dueDate string => parse y set
+ *
+ * - runValidators: true asegura que el schema valide en updates.
+ */
 export async function updateTaskInWorkspace(
   workspaceId: string,
   taskId: string,
@@ -176,6 +222,11 @@ export async function updateTaskInWorkspace(
     }
   }
 
+  /**
+   * Construimos el update minimizando operadores:
+   * - solo $set si no hay $unset
+   * - si hay ambos, incluimos los que correspondan
+   */
   const update =
     Object.keys(unsetData).length === 0
       ? { $set: setData }
@@ -184,6 +235,11 @@ export async function updateTaskInWorkspace(
           $unset: unsetData,
         };
 
+  /**
+   * findOneAndUpdate con scope:
+   * - workspaceId para evitar tocar tasks de otros workspaces
+   * - taskId como _id
+   */
   const doc = await TaskModel.findOneAndUpdate(
     { _id: taskId, workspaceId },
     update,
@@ -193,6 +249,10 @@ export async function updateTaskInWorkspace(
   return doc ? mapDocToTask(doc) : null;
 }
 
+/**
+ * Elimina una task por id dentro del workspace.
+ * Retorna boolean para que el controller pueda responder 404 vs ok.
+ */
 export async function deleteTaskInWorkspace(
   workspaceId: string,
   taskId: string
@@ -201,9 +261,16 @@ export async function deleteTaskInWorkspace(
     _id: taskId,
     workspaceId,
   }).exec();
+
   return doc !== null;
 }
 
+/**
+ * Elimina todas las tasks del workspace.
+ * Útil para:
+ * - borrar workspace
+ * - reset / limpieza de datos
+ */
 export async function deleteAllTasksInWorkspace(
   workspaceId: string
 ): Promise<number> {

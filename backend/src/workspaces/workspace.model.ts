@@ -3,7 +3,7 @@ import mongoose, { HydratedDocument } from "mongoose";
 export type WorkspaceSchema = {
   name: string;
   owner: mongoose.Types.ObjectId;
-  inviteCode?: string; // ✅ opcional
+  inviteCode?: string;
   isPersonal: boolean;
 };
 
@@ -34,7 +34,7 @@ const workspaceSchema = new mongoose.Schema<WorkspaceSchema>(
     },
     inviteCode: {
       type: String,
-      default: undefined, // ✅ que NO exista por default
+      default: undefined,
       unique: true,
       sparse: true,
       index: true,
@@ -50,7 +50,7 @@ const workspaceSchema = new mongoose.Schema<WorkspaceSchema>(
 
 workspaceSchema.pre("validate", function (this: WorkspaceDoc) {
   if (this.isPersonal) {
-    delete this.inviteCode; // ✅ elimina el campo (perfecto con exactOptionalPropertyTypes)
+    delete this.inviteCode;
     return;
   }
 

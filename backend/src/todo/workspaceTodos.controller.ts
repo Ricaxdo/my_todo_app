@@ -11,6 +11,12 @@ import {
 import { createActivity } from "../activities/activity.store";
 import { TaskModel } from "../tasks/task.model";
 
+/**
+ * Helpers de timezone/fechas
+ * (idénticos a task.controller para mantener consistencia).
+ *
+ */
+
 // timezone helper (igual que tu task.controller)
 function getRequestTimezone(req: AuthRequest): string {
   const tz = req.header("X-Timezone")?.trim() || req.header("x-tz")?.trim();
@@ -18,11 +24,18 @@ function getRequestTimezone(req: AuthRequest): string {
   return "America/Mexico_City";
 }
 
+/**
+ * Acepta:
+ * - "YYYY-MM-DD" (día)
+ * - ISO string
+ * Retorna Date si es válido (o undefined si no).
+ */
 function parseValidDateLike(value?: string): Date | undefined {
   if (!value) return undefined;
 
   const isDayOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
   if (isDayOnly) {
+    // referencia; el store interpreta correctamente el rango usando tz
     const d = new Date(`${value}T00:00:00.000Z`);
     return Number.isNaN(d.getTime()) ? undefined : d;
   }
@@ -31,10 +44,14 @@ function parseValidDateLike(value?: string): Date | undefined {
   return Number.isNaN(d.getTime()) ? undefined : d;
 }
 
+/** Validación rápida para dueDate: ISO o YYYY-MM-DD */
 function isValidIsoOrDay(value: string): boolean {
   return Boolean(parseValidDateLike(value));
 }
 
+/**
+ * Helpers legacy/no usados aquí.
+ */
 function parseValidDate(date?: string): Date | undefined {
   if (!date) return undefined;
   const d = new Date(date);
@@ -45,6 +62,14 @@ function isValidIsoDateString(value: string) {
   const d = new Date(value);
   return !Number.isNaN(d.getTime());
 }
+
+/**
+ * GET /workspaces/:workspaceId/todos?date=...
+ *
+ * Lista los todos (tasks) dentro de un workspace específico.
+ * - date (opcional) filtra por día (interpretado en tz).
+ *
+ */
 export async function getWorkspaceTodos(
   req: AuthRequest,
   res: Response,
@@ -64,12 +89,20 @@ export async function getWorkspaceTodos(
   }
 }
 
+/**
+ * POST /workspaces/:workspaceId/todos
+ *
+ * Crea un todo en un workspace compartido.
+ * - Usa createTaskInWorkspace del módulo tasks (reutilización de lógica)
+ * - Registra un evento en Activity (todo.create)
+ */
 export async function createWorkspaceTodo(
   req: AuthRequest,
   res: Response,
   next: NextFunction
 ) {
   try {
+    // Auth: userId viene del middleware auth()
     const userId = req.user?._id;
     if (!userId) throw unauthorized("authorization required");
 
@@ -84,16 +117,22 @@ export async function createWorkspaceTodo(
       assignees?: string[];
     };
 
+    // Guard mínimo: no crear tareas vacías.
     if (!text || typeof text !== "string" || !text.trim()) {
       return res.status(400).json({ message: "text is required" });
     }
 
+    // Validación simple de dueDate.
     if (dueDate && !isValidIsoOrDay(dueDate)) {
       return res.status(400).json({
         message: "dueDate must be a valid ISO date or YYYY-MM-DD",
       });
     }
 
+    /**
+     * Payload limpio: solo incluimos campos cuando existen.
+     * - assignees solo si es array no vacío
+     */
     const created = await createTaskInWorkspace(
       workspaceId,
       userId,
@@ -107,7 +146,10 @@ export async function createWorkspaceTodo(
       tz
     );
 
-    // ✅ activity log
+    /**
+     * Activity log: evento de creación.
+     * meta incluye info útil para render del feed sin tener que “re-lookup”.
+     */
     await createActivity({
       workspaceId,
       actorUserId: userId,
@@ -130,6 +172,11 @@ export async function createWorkspaceTodo(
   }
 }
 
+/**
+ * PUT /workspaces/:workspaceId/todos/:id
+ *
+ * Actualiza un todo del workspace.
+ */
 export async function updateWorkspaceTodo(
   req: AuthRequest,
   res: Response,
@@ -155,6 +202,7 @@ export async function updateWorkspaceTodo(
       dueDate?: string | null;
     };
 
+    // Evita updates vacíos.
     if (
       text === undefined &&
       completed === undefined &&
@@ -171,7 +219,12 @@ export async function updateWorkspaceTodo(
       });
     }
 
-    // ✅ si viene completed, tomamos el valor anterior
+    /**
+     * Si se actualiza `completed`, queremos detectar el cambio real (toggle).
+     * - Leemos el valor anterior antes del update.
+     * - Esto evita loggear toggle cuando el FE manda el mismo valor.
+     *
+     */
     let prevCompleted: boolean | null = null;
     if (completed !== undefined) {
       const prev = await TaskModel.findOne({ _id: id, workspaceId })
@@ -198,7 +251,9 @@ export async function updateWorkspaceTodo(
 
     if (!updated) return res.status(404).json({ message: "task not found" });
 
-    // ✅ log: toggle
+    /**
+     * Activity log: toggle solo si hubo cambio real.
+     */
     if (
       completed !== undefined &&
       prevCompleted !== null &&
@@ -219,6 +274,12 @@ export async function updateWorkspaceTodo(
   }
 }
 
+/**
+ * DELETE /workspaces/:workspaceId/todos/:id
+ *
+ * Elimina un todo del workspace y registra activity todo.delete.
+ * Opcionalmente hacemos “preview” del texto para guardarlo en meta.
+ */
 export async function deleteWorkspaceTodo(
   req: AuthRequest,
   res: Response,
@@ -234,7 +295,11 @@ export async function deleteWorkspaceTodo(
     };
     if (!id) return res.status(400).json({ message: "task id is required" });
 
-    // opcional: traer preview
+    /**
+     * Preview opcional:
+     * - lo usamos para meta (mostrar en feed: "X deleted '...'")
+     * - si no existe o falla, igual intentamos delete
+     */
     const prev = await TaskModel.findOne({ _id: id, workspaceId })
       .select("text")
       .lean()

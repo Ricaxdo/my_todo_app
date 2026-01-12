@@ -1,4 +1,3 @@
-// src/activities/activity.types.ts
 import type { ActivityType } from "./activity.model";
 
 export type ActivityItem = {

@@ -1,4 +1,3 @@
-// src/tasks/task.model.ts
 import { Schema, model, type HydratedDocument, type Types } from "mongoose";
 
 export type TaskSchema = {
@@ -15,7 +14,6 @@ export type TaskSchema = {
   // temporal
   owner?: Types.ObjectId | null;
 
-  // ✅ nuevo
   assignees: Types.ObjectId[];
 
   // timestamps
