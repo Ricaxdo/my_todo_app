@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, Check, Clock, Flag, Trash2, Users } from "lucide-react";
+import { Check, Clock, Flag, Trash2, Users } from "lucide-react";
 import type React from "react";
 
 import type { TaskItemProps } from "./types/taskItem.types";
@@ -17,7 +17,6 @@ export default function TaskItem({
   members,
   isPersonalWorkspace,
   meId,
-  now, // viene del padre (TaskList/Dashboard)
 }: TaskItemProps) {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     // accesibilidad: permitir toggle con Enter / Space
@@ -38,14 +37,6 @@ export default function TaskItem({
 
   // normaliza fechas (Task puede traer string)
   const createdAtDate = toDate(task.createdAt) ?? new Date();
-  const dueDateObj = toDate(task.dueDate);
-
-  // no calcula tiempo aquí, solo compara contra "now" recibido
-  const isOverdue =
-    Boolean(dueDateObj) &&
-    !task.completed &&
-    now > 0 &&
-    dueDateObj!.getTime() < now;
 
   return (
     <div
@@ -74,7 +65,7 @@ export default function TaskItem({
       {/* Main content */}
       <div className="flex-1 min-w-0">
         <p
-          className={`text-lg md:text-base font-medium truncate transition-all ${
+          className={`text-lg font-medium truncate transition-all ${
             task.completed
               ? "text-muted-foreground line-through"
               : "text-foreground"
@@ -108,23 +99,6 @@ export default function TaskItem({
               minute: "2-digit",
             })}
           </span>
-
-          {/* Due date */}
-          {dueDateObj && (
-            <span
-              className={`flex items-center gap-1.5 text-[11px] max-[349px]:text-[9px] px-2.5 py-1 rounded-full border font-medium ${
-                isOverdue
-                  ? "text-red-400 bg-red-500/10 border-red-500/30"
-                  : "text-emerald-400 bg-emerald-500/10 border-emerald-500/30"
-              }`}
-            >
-              <Calendar className="w-3 h-3" />
-              {dueDateObj.toLocaleDateString([], {
-                month: "short",
-                day: "numeric",
-              })}
-            </span>
-          )}
         </div>
       </div>
 

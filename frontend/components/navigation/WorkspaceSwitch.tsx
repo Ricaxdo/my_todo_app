@@ -64,13 +64,13 @@ export default function WorkspaceSwitch({
 
   return (
     <>
-      {/* MOBILE (<500px): 1 botón, click = toggle */}
-      <div className="hidden max-[499px]:block w-[76px] order-3">
+      {/* MOBILE (<399px): 1 botón, click = toggle */}
+      <div className="hidden max-[398px]:block w-[120px] order-3">
         <button
           type="button"
           onClick={toggleWorkspace}
           className={cn(
-            "w-[76px] flex items-center justify-center text-center",
+            "w-[120px] flex items-center justify-center text-center",
             "rounded-xl border border-border bg-muted/30 px-3 py-2",
             "text-[13px] font-semibold",
             "hover:bg-muted/50 active:scale-[0.99] transition"
@@ -80,15 +80,15 @@ export default function WorkspaceSwitch({
         </button>
       </div>
 
-      {/* DESKTOP (>=500px): switch segmentado */}
-      <div className="hidden min-[500px]:block">
+      {/* DESKTOP (>=399px): switch segmentado */}
+      <div className="hidden min-[399px]:block">
         <div
           className={cn(
             "relative flex items-center rounded-xl border border-border bg-muted/30 p-1",
-            "w-[100px] min-[500px]:w-[240px]"
+            "w-[100px] min-[399px]:w-[240px]"
           )}
         >
-          {/* “Pill” animado */}
+          {/* Pill animado */}
           <div
             className={cn(
               "absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-lg bg-background shadow-sm",

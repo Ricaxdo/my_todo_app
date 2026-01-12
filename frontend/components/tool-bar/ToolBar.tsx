@@ -38,7 +38,7 @@ export default function Toolbar(props: ToolbarProps) {
         <SortSelect value={sortOption} onChange={setSortOption} />
       ) : null}
 
-      <div className="flex-1 min-w-[200px]" />
+      <div className="flex-1" />
 
       {showSearch ? (
         <SearchInput value={searchQuery} onChange={setSearchQuery} />

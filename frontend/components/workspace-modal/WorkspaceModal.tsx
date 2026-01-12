@@ -121,7 +121,7 @@ export function WorkspaceModal({ open, onOpenChange }: WorkspaceModalProps) {
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-[calc(100vw-24px)] sm:max-w-[600px] max-h-[85vh] overflow-y-auto gap-6">
+        <DialogContent className="w-[calc(100vw-24px)] sm:max-w-[600px] max-h-[85vh] overflow-y-auto scrollbar-hover gap-6">
           <WorkspaceHeader
             name={workspace.name}
             isPersonal={workspace.isPersonal}

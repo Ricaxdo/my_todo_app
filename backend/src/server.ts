@@ -23,7 +23,7 @@ app.use(
 app.use(express.json());
 
 app.use("/", rootRouter);
-app.use("/todos", taskRoutes); // compat personal
+app.use("/todos", taskRoutes); // compat personala
 
 app.use("/workspaces", workspaceRoutes);
 app.use("/workspaces", workspaceTodosRoutes); // shared by workspace

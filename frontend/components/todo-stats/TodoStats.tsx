@@ -24,7 +24,7 @@ export default function TodoStats({
   const [open, setOpen] = React.useState(false);
 
   return (
-    <section className="grid grid-cols-1 md:grid-cols-3 gap-3">
+    <section className="flex flex-col gap-3">
       <PendingCard
         activeCount={activeCount}
         userActiveCount={userActiveCount}

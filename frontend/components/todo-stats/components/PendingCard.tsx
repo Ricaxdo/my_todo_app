@@ -30,17 +30,16 @@ export default function PendingCard({
           <TrendingUp className="w-8 h-8 text-blue-500 mb-1 opacity-70 font-bold" />
         </div>
 
-        <p className="text-sm text-muted-foreground">Tareas activas</p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">Tareas activas</p>
 
-        {/* Sub-bloque “Asignadas a ti” */}
-        <div className="pt-2 mt-2 border-t border-border/50">
-          <div className="flex items-center gap-2 text-blue-500/80">
-            <User className="w-6 h-6" />
-            <span className="text-xl font-bold text-white">
+          <div className="flex items-center gap-1.5 text-blue-500/80">
+            <User className="w-4 h-4" />
+            <span className="text-lg font-bold text-white">
               {userActiveCount}
             </span>
-            <span className="text-sm text-muted-foreground font-medium">
-              Asignadas a ti
+            <span className="text-xs text-muted-foreground font-medium">
+              asignadas
             </span>
           </div>
         </div>
