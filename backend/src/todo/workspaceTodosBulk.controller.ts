@@ -1,4 +1,3 @@
-// src/workspaces/workspaceTodosBulk.controller.ts
 import type { NextFunction, Response } from "express";
 import { createActivity } from "../activities/activity.store";
 import { unauthorized } from "../errors/AppError";
@@ -6,12 +5,24 @@ import type { AuthRequest } from "../middleware/auth";
 import { TaskModel } from "../tasks/task.model";
 import { createTaskInWorkspace, getWorkspaceTasks } from "../tasks/task.store";
 
+/**
+ * Helpers de timezone/fechas (misma convención que el resto de controllers).
+ * Tip pro: estos helpers ya aparecen en varios archivos; conviene moverlos a /utils.
+ */
 function getRequestTimezone(req: AuthRequest): string {
   const tz = req.header("X-Timezone")?.trim() || req.header("x-tz")?.trim();
   if (tz && tz.length <= 64) return tz;
   return "America/Mexico_City";
 }
 
+/**
+ * Parsea:
+ * - "YYYY-MM-DD" (día)
+ * - ISO string
+ * Retorna Date si es válido, si no -> undefined.
+ *
+ *
+ */
 function parseValidDateLike(value?: string): Date | undefined {
   if (!value) return undefined;
 
@@ -26,6 +37,17 @@ function parseValidDateLike(value?: string): Date | undefined {
 }
 
 // POST /workspaces/:workspaceId/todos/bulk-create
+/**
+ * Crea múltiples todos en un workspace (bulk).
+ *
+ * Reglas:
+ * - items debe ser array no vacío
+ * - max 100 items (anti-abuso / performance)
+ * - items con text inválido se saltan (no rompe toda la operación)
+ *
+ * Registra activity:
+ * - todo.bulk_create con { requested, created }
+ */
 export async function bulkCreateTodos(
   req: AuthRequest,
   res: Response,
@@ -48,6 +70,7 @@ export async function bulkCreateTodos(
       }>;
     };
 
+    // Validación básica del payload.
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: "items is required" });
     }
@@ -55,12 +78,24 @@ export async function bulkCreateTodos(
       return res.status(400).json({ message: "max 100 items" });
     }
 
+    /**
+     * Tipado del array "created" basado en el retorno real de createTaskInWorkspace.
+     * (Evita duplicar el tipo Task si el store cambia el shape.)
+     */
     const created: Array<
       ReturnType<typeof createTaskInWorkspace> extends Promise<infer T>
         ? T
         : never
     > = [];
+
+    /**
+     * Bulk por loop secuencial:
+     * - Más simple y seguro para MVP.
+     * - Si algún día necesitas performance, podrías paralelizar con Promise.all
+     *   o hacer insertMany en store (con validaciones).
+     */
     for (const it of items) {
+      // Saltamos entradas inválidas sin romper el bulk completo.
       if (!it?.text || typeof it.text !== "string" || !it.text.trim()) continue;
 
       created.push(
@@ -81,6 +116,7 @@ export async function bulkCreateTodos(
       );
     }
 
+    // Activity: resumen del bulk (no listamos todos los ids para no inflar meta).
     await createActivity({
       workspaceId,
       actorUserId: userId,
@@ -97,6 +133,20 @@ export async function bulkCreateTodos(
 
 // PATCH /workspaces/:workspaceId/todos/bulk-complete
 // body: { completed: true, scope?: "all"|"active"|"completed", date?: ISO|YYYY-MM-DD }
+/**
+ * Marca como completed/uncompleted en bulk.
+ *
+ * Inputs:
+ * - completed (required boolean)
+ * - scope (opcional): all | active | completed
+ * - date (opcional): si viene, el bulk se limita a las tasks de ese día (timezone-safe)
+ *
+ * Implementación:
+ * - Si hay date: obtenemos ids vía getWorkspaceTasks y aplicamos updateMany por _id:$in
+ * - Si no hay date: updateMany directo por workspaceId
+ *
+ * Registra activity: todo.bulk_complete con { completed, scope, date, affected }
+ */
 export async function bulkCompleteTodos(
   req: AuthRequest,
   res: Response,
@@ -115,29 +165,38 @@ export async function bulkCompleteTodos(
       date?: string;
     };
 
+    // Guard: completed es obligatorio y debe ser boolean.
     if (typeof completed !== "boolean") {
       return res.status(400).json({ message: "completed boolean is required" });
     }
 
     const selectedDate = parseValidDateLike(date);
 
-    // si quieres que sea “por día”, usamos tu mismo getWorkspaceTasks (timezone-safe)
-    // Si no mandas date: aplica a TODO el workspace
+    /**
+     * Filtro base del update:
+     * - Por default afecta TODO el workspace.
+     * - Si hay date: restringimos a ids del día.
+     */
     let filter: any = { workspaceId };
 
     if (selectedDate) {
-      // tomamos ids de tasks del día y actualizamos por ids
+      // Tomamos ids de tasks del día usando el store (timezone-safe).
       const tasks = await getWorkspaceTasks(workspaceId, selectedDate, tz);
       const ids = tasks.map((t) => t.id);
       filter = { _id: { $in: ids }, workspaceId };
     }
 
+    // Scope:
+    // - "active" => solo las no completadas
+    // - "completed" => solo las completadas
     if (scope === "active") filter.completed = false;
     if (scope === "completed") filter.completed = true;
 
     const result = await TaskModel.updateMany(filter, {
       $set: { completed },
     }).exec();
+
+    // affected: cuántos docs cambiaron realmente (no matched).
     const affected = result.modifiedCount ?? 0;
 
     await createActivity({
@@ -161,6 +220,15 @@ export async function bulkCompleteTodos(
 
 // DELETE /workspaces/:workspaceId/todos/bulk-delete
 // body: { scope?: "all"|"completed"|"active", date?: ISO|YYYY-MM-DD }
+/**
+ * Borra todos en bulk.
+ *
+ * Inputs:
+ * - scope (opcional): all | completed | active
+ * - date (opcional): si viene, solo borra tasks del día (timezone-safe)
+ *
+ * Registra activity: todo.bulk_delete con { scope, date, affected }
+ */
 export async function bulkDeleteTodos(
   req: AuthRequest,
   res: Response,
@@ -180,6 +248,7 @@ export async function bulkDeleteTodos(
 
     const selectedDate = parseValidDateLike(date);
 
+    // Filtro base: todo el workspace, o ids del día si date viene.
     let filter: any = { workspaceId };
 
     if (selectedDate) {
