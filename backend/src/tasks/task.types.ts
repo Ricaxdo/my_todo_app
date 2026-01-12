@@ -8,6 +8,6 @@ export interface Task {
   category: string;
   createdAt: string; // ISO
   updatedAt?: string; // opcional
-  dueDate?: string | null; // ✅ nuevo (ISO o null)
-  assignees: string[]; // ✅ nuevo
+  dueDate?: string | null;
+  assignees: string[];
 }
