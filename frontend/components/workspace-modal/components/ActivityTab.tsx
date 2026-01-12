@@ -27,7 +27,7 @@ export default function ActivityTab({ activity }: { activity: ActivityState }) {
         <p className="text-sm text-muted-foreground">Aún no hay actividad.</p>
       ) : (
         <>
-          <div className="max-h-[360px] overflow-y-auto pr-2 space-y-2">
+          <div className="max-h-[360px] overflow-y-auto pr-2 space-y-2 scrollbar-hover">
             {activity.items.map((it) => (
               <div key={it.id} className="rounded-md border p-3">
                 <p className="text-sm font-medium">{formatActivity(it)}</p>
