@@ -2,6 +2,12 @@
 
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -9,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { WorkspaceModal } from "@/components/workspace-modal/WorkspaceModal";
-import { LogOut, Settings, User } from "lucide-react";
+import { Loader2, LogOut, Settings, User } from "lucide-react";
 import * as React from "react";
 
 import { UserProfileModal } from "./UserProfileModal";
@@ -30,7 +36,7 @@ type UserMenuProps = {
   workspaceOpen: boolean;
   setWorkspaceOpen: (open: boolean) => void;
 
-  onLogout: () => void;
+  onLogout: () => void | Promise<void>;
 
   onDeleteAccount?: () => void;
 };
@@ -47,13 +53,49 @@ export default function UserMenu({
   onDeleteAccount,
 }: UserMenuProps) {
   const [profileOpen, setProfileOpen] = React.useState(false);
+  const [logoutOpen, setLogoutOpen] = React.useState(false);
+
+  const safeInitial = (displayName?.trim()?.[0] ?? "U").toUpperCase();
+
+  async function handleLogout() {
+    if (logoutOpen) return;
+
+    setLogoutOpen(true);
+
+    try {
+      // deja que el modal pinte antes de redirigir
+      await new Promise((r) => setTimeout(r, 1000));
+      await Promise.resolve(onLogout());
+    } finally {
+      // si tu app redirige, normalmente ni se verá este cierre,
+      // pero lo dejamos por seguridad
+      setLogoutOpen(false);
+    }
+  }
 
   return (
     <>
+      {/* ✅ Logout Modal (centrado perfecto, con overlay real) */}
+      <Dialog open={logoutOpen} onOpenChange={() => {}}>
+        <DialogContent
+          className="max-w-sm [&>button]:hidden"
+          onEscapeKeyDown={(e) => e.preventDefault()}
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+          aria-busy="true"
+        >
+          <DialogHeader>
+            <DialogTitle className="flex justify-center items-center gap-2">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              Cerrando sesión…
+            </DialogTitle>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+
       {/* Modal vive aquí para que siempre esté montado */}
       <WorkspaceModal open={workspaceOpen} onOpenChange={setWorkspaceOpen} />
 
-      {/* ✅ Nuevo modal de perfil */}
       <UserProfileModal
         open={profileOpen}
         onOpenChange={setProfileOpen}
@@ -71,7 +113,7 @@ export default function UserMenu({
             variant="ghost"
             size="icon"
             className="rounded-full shrink-0"
-            disabled={isLoading}
+            disabled={isLoading || logoutOpen}
           >
             <User className="size-5" />
             <span className="sr-only">Menú de usuario</span>
@@ -79,7 +121,6 @@ export default function UserMenu({
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="end" className="w-56">
-          {/* 👤 Perfil (header clickeable) */}
           <DropdownMenuItem
             className="gap-3 py-3 cursor-pointer focus:bg-muted/50"
             onSelect={(e) => {
@@ -88,7 +129,7 @@ export default function UserMenu({
             }}
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold">
-              {displayName.charAt(0).toUpperCase()}
+              {safeInitial}
             </div>
 
             <div className="min-w-0">
@@ -118,13 +159,14 @@ export default function UserMenu({
           {/* Logout */}
           <DropdownMenuItem
             className="py-3"
+            disabled={logoutOpen}
             onSelect={(e) => {
               e.preventDefault();
-              onLogout();
+              void handleLogout();
             }}
           >
             <LogOut className="mx-2 size-5" />
-            <span>Cerrar sesión</span>
+            <span>{logoutOpen ? "Saliendo..." : "Cerrar sesión"}</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
