@@ -28,19 +28,23 @@ type Props = {
  * Orden:
  * 1) incompletas primero
  * 2) completadas al final
- * 3) dentro de cada grupo: por createdAt ASC (más viejas arriba)
+ * 3) dentro de cada grupo: por createdAt DESC (más nuevas arriba)
  */
 function sortTasks(tasks: Task[]): Task[] {
-  const sortByCreatedAtAsc = (a: Task, b: Task) => {
+  const sortByCreatedAtDesc = (a: Task, b: Task) => {
     const dateA =
       a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
     const dateB =
       b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
-    return dateA.getTime() - dateB.getTime();
+
+    // 👇 DESC = más reciente primero
+    return dateB.getTime() - dateA.getTime();
   };
 
-  const incomplete = tasks.filter((t) => !t.completed).sort(sortByCreatedAtAsc);
-  const complete = tasks.filter((t) => t.completed).sort(sortByCreatedAtAsc);
+  const incomplete = tasks
+    .filter((t) => !t.completed)
+    .sort(sortByCreatedAtDesc);
+  const complete = tasks.filter((t) => t.completed).sort(sortByCreatedAtDesc);
 
   return [...incomplete, ...complete];
 }
