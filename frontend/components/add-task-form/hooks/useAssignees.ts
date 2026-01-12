@@ -56,6 +56,12 @@ export function useAssignees(params: {
   }, [isPersonalWorkspace, allAssigneeIds, assignees]);
 
   /**
+   * ✅ UI helper: ¿este miembro está seleccionado?
+   * Nota: si isAllSelected es true, igual cae en includes porque assignees contiene todos.
+   */
+  const isSelected = (id: string) => assignees.includes(id);
+
+  /**
    * Toggle global:
    * - Si ya están todos → vuelve al usuario actual
    * - Si no → asigna a todos
@@ -118,5 +124,7 @@ export function useAssignees(params: {
     toggleAll,
     toggleAssignee,
     assigneeLabel,
+
+    isSelected,
   };
 }

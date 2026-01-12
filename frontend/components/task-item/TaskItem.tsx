@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, Check, Clock, Flag, Trash2, Users } from "lucide-react";
+import { Check, Clock, Flag, Trash2, Users } from "lucide-react";
 import type React from "react";
 
 import type { TaskItemProps } from "./types/taskItem.types";
@@ -108,23 +108,6 @@ export default function TaskItem({
               minute: "2-digit",
             })}
           </span>
-
-          {/* Due date */}
-          {dueDateObj && (
-            <span
-              className={`flex items-center gap-1.5 text-[11px] max-[349px]:text-[9px] px-2.5 py-1 rounded-full border font-medium ${
-                isOverdue
-                  ? "text-red-400 bg-red-500/10 border-red-500/30"
-                  : "text-emerald-400 bg-emerald-500/10 border-emerald-500/30"
-              }`}
-            >
-              <Calendar className="w-3 h-3" />
-              {dueDateObj.toLocaleDateString([], {
-                month: "short",
-                day: "numeric",
-              })}
-            </span>
-          )}
         </div>
       </div>
 
