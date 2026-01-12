@@ -1,10 +1,7 @@
 "use client";
 
-import { BarChart3, ListChecks } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-
-import { Button } from "@/components/ui/button";
+import { useMemo, useState } from "react";
 
 import { useTodoDashboard } from "@/components/todo-dashboard/hooks/useTodoDashboard";
 import { useAuth } from "@/state/auth/auth-context";
@@ -14,12 +11,14 @@ import { scrollToId } from "./nav-scroll";
 import UserMenu from "./UserMenu";
 import WorkspaceSwitch from "./WorkspaceSwitch";
 
+import { authApi } from "@/services/auth/auth.api";
+
 /**
  * TodoNavBar
  * - Barra superior del dashboard de tareas
  * - Acciones: scroll a secciones (progress/tasks/home)
  * - Switch de workspace (si hay 2)
- * - Menú usuario (workspace modal + logout)
+ * - Menú usuario (perfil + workspace modal + logout)
  */
 export default function TodoNavBar() {
   const router = useRouter();
@@ -32,17 +31,22 @@ export default function TodoNavBar() {
 
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
 
-  const displayName =
-    user?.name?.trim() || (user?.email ? user.email.split("@")[0] : "Cuenta");
+  const displayName = useMemo(() => {
+    if (!user) return "Cuenta";
+    const full = `${user.name ?? ""} ${user.lastName ?? ""}`.trim();
+    if (full) return full;
+    return user.email ? user.email.split("@")[0] : "Cuenta";
+  }, [user]);
+
+  const sharedWorkspace = useMemo(() => {
+    const extra = workspaces.find((w) => !w.isPersonal);
+    if (!extra) return null;
+    return { id: extra.id, name: extra.name };
+  }, [workspaces]);
 
   function handleLogout() {
-    // 1) limpiar auth
     logout();
-
-    // 2) limpiar UI/state del dashboard
     resetDashboardState();
-
-    // 3) redirigir
     router.replace("/login");
   }
 
@@ -51,8 +55,22 @@ export default function TodoNavBar() {
 
     setCurrentWorkspaceId(id);
 
-    // UX: al cambiar de workspace, subimos a “home”
     scrollToId("home", { duration: 600, extraOffset: 12, navId: "app-navbar" });
+  }
+
+  async function handleDeleteAccount() {
+    try {
+      await authApi.deleteMe();
+
+      // Limpieza local
+      logout();
+      resetDashboardState();
+
+      router.replace("/login");
+    } catch (err) {
+      console.error(err);
+      // aquí puedes meter toast/error banner si quieres
+    }
   }
 
   return (
@@ -69,29 +87,6 @@ export default function TodoNavBar() {
 
       {/* Acciones (centro) */}
       <div className="flex items-center justify-end gap-0 flex-1 min-w-0">
-        <Button
-          variant="ghost"
-          onClick={() =>
-            scrollToId("progress", { duration: 1000, extraOffset: 12 })
-          }
-        >
-          <BarChart3 className="block sm:hidden h-5 w-5" />
-          <span className="hidden sm:inline">Progress</span>
-          <span className="sr-only">Progress</span>
-        </Button>
-
-        <Button
-          variant="ghost"
-          onClick={() =>
-            scrollToId("tasks-anchor", { duration: 1000, extraOffset: 12 })
-          }
-          className="px-2 sm:px-3"
-        >
-          <ListChecks className="block sm:hidden h-5 w-5" />
-          <span className="hidden sm:inline">Tasks</span>
-          <span className="sr-only">Tasks</span>
-        </Button>
-
         {/* Switch de workspace (o Home si no hay 2) */}
         <WorkspaceSwitch
           workspaces={workspaces}
@@ -106,9 +101,12 @@ export default function TodoNavBar() {
         isLoading={isAuthLoading}
         displayName={displayName}
         email={user?.email}
+        phone={user?.phone ?? null}
+        sharedWorkspace={sharedWorkspace}
         workspaceOpen={workspaceOpen}
         setWorkspaceOpen={setWorkspaceOpen}
         onLogout={handleLogout}
+        onDeleteAccount={handleDeleteAccount}
       />
     </nav>
   );

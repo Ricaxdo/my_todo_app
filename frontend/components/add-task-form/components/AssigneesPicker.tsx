@@ -10,29 +10,26 @@ import type { Member } from "../types/addTaskForm.types";
 import { toTitleCase } from "../utils/addTaskForm.utils";
 
 type Props = {
-  /**
-   * Miembros disponibles para asignar.
-   * La lógica de selección vive en el hook (useAssignees).
-   */
   members: Member[];
-
-  /**
-   * Estado y handlers derivados de useAssignees.
-   * Este componente solo consume y renderiza UI.
-   */
   asg: {
     isAssignPopoverOpen: boolean;
     setIsAssignPopoverOpen: (v: boolean) => void;
+
     isAllSelected: boolean;
     toggleAll: () => void;
     toggleAssignee: (id: string) => void;
+
     assigneeLabel: string;
+
+    /** ✅ NUEVO: permite pintar UI “selected” por miembro */
+    isSelected: (id: string) => boolean;
   };
 };
 
 /**
  * Selector de asignados para workspaces compartidos.
- * Componente controlado: no guarda estado propio de negocio.
+ * - Si solo hay 1 miembro (el creador), el trigger se deshabilita y solo muestra su nombre.
+ * - Pinta estado seleccionado por miembro (highlight + ✓).
  */
 export default function AssigneesPicker({ members, asg }: Props) {
   const {
@@ -42,55 +39,94 @@ export default function AssigneesPicker({ members, asg }: Props) {
     toggleAll,
     toggleAssignee,
     assigneeLabel,
+    isSelected,
   } = asg;
 
+  const onlyOneMember = members.length === 1;
+
+  const singleMemberName = onlyOneMember
+    ? toTitleCase(members[0]?.name ?? "")
+    : "";
+
+  // Si solo hay 1 miembro, evitamos que el popover pueda abrirse.
+  const popoverOpen = onlyOneMember ? false : isAssignPopoverOpen;
+  const handleOpenChange = (v: boolean) => {
+    if (onlyOneMember) return;
+    setIsAssignPopoverOpen(v);
+  };
+
+  // Label: si solo está el creador, mostramos su nombre sí o sí.
+  const label = onlyOneMember ? singleMemberName : assigneeLabel;
+
   return (
-    <Popover open={isAssignPopoverOpen} onOpenChange={setIsAssignPopoverOpen}>
+    <Popover open={popoverOpen} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
-        {/* Trigger tipo chip con label humano */}
         <button
           type="button"
-          className="flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/60 border border-border/40 hover:border-border transition-all text-sm max-[349px]:text-xs font-medium text-foreground/80 hover:text-foreground shrink-0"
+          disabled={onlyOneMember}
+          className={[
+            "flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/60 border border-border/40 text-sm max-[349px]:text-xs font-medium shrink-0",
+            onlyOneMember
+              ? "opacity-60 cursor-not-allowed"
+              : "hover:border-border transition-all text-foreground/80 hover:text-foreground",
+          ].join(" ")}
+          title={
+            onlyOneMember ? "Solo hay un miembro en este workspace" : undefined
+          }
         >
           <Users className="w-4 h-4" />
-          <span>{assigneeLabel}</span>
-          <ChevronDown className="w-3 h-3 opacity-60" />
+          <span className="max-w-[160px] truncate">{label}</span>
+
+          {/* Si está disabled, ocultamos el chevron */}
+          {!onlyOneMember && <ChevronDown className="w-3 h-3 opacity-60" />}
         </button>
       </PopoverTrigger>
 
-      <PopoverContent className="w-72 p-2" align="start">
-        <div className="px-2 py-1 text-xs text-muted-foreground">
-          Asignar a:
-        </div>
+      {/* Si solo hay 1 miembro, ni renderizamos contenido */}
+      {!onlyOneMember && (
+        <PopoverContent className="w-72 p-2" align="start">
+          <div className="px-2 py-1 text-xs text-muted-foreground">
+            Asignar a:
+          </div>
 
-        {/* Opción global: Todos */}
-        <button
-          type="button"
-          onClick={toggleAll}
-          className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors ${
-            isAllSelected ? "bg-white/80 text-black" : "hover:bg-secondary"
-          }`}
-        >
-          <span>Todos</span>
-          {isAllSelected && <span className="text-xs font-semibold">✓</span>}
-        </button>
+          {/* Opción global: Todos */}
+          <button
+            type="button"
+            onClick={toggleAll}
+            className={[
+              "w-full flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors",
+              isAllSelected ? "bg-white/80 text-black" : "hover:bg-secondary",
+            ].join(" ")}
+          >
+            <span>Todos</span>
+            {isAllSelected && <span className="text-xs font-semibold">✓</span>}
+          </button>
 
-        <div className="my-1 h-px bg-border" />
+          <div className="my-1 h-px bg-border" />
 
-        {/* Lista de miembros */}
-        <div className="max-h-56 overflow-auto">
-          {members.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => toggleAssignee(m.id)}
-              className="w-full flex items-center justify-between my-1 px-3 py-2 rounded-md text-sm transition-colors hover:bg-secondary"
-            >
-              <span className="truncate">{toTitleCase(m.name)}</span>
-            </button>
-          ))}
-        </div>
-      </PopoverContent>
+          {/* Lista de miembros */}
+          <div className="max-h-56 overflow-auto">
+            {members.map((m) => {
+              const selected = isSelected(m.id);
+
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => toggleAssignee(m.id)}
+                  className={[
+                    "w-full flex items-center justify-between my-1 px-3 py-2 rounded-md text-sm transition-colors",
+                    selected ? "bg-white/80 text-black" : "hover:bg-secondary",
+                  ].join(" ")}
+                >
+                  <span className="truncate">{toTitleCase(m.name)}</span>
+                  {selected && <span className="text-xs font-semibold">✓</span>}
+                </button>
+              );
+            })}
+          </div>
+        </PopoverContent>
+      )}
     </Popover>
   );
 }

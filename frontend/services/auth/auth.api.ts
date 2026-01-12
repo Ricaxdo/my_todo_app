@@ -34,6 +34,10 @@ export type SignupResponse = {
   personalWorkspaceId: string | null;
 };
 
+export type DeleteMeResponse = {
+  success: boolean;
+};
+
 function saveToken(token: string) {
   if (typeof window === "undefined") return;
   localStorage.setItem("token", token);
@@ -83,6 +87,16 @@ export const authApi = {
     });
 
     saveToken(res.token);
+    return res;
+  },
+
+  deleteMe: async () => {
+    const res = await apiFetch<DeleteMeResponse>("/auth/me", {
+      method: "DELETE",
+    });
+
+    // ✅ limpiamos token local (sesión muerta)
+    clearToken();
     return res;
   },
 

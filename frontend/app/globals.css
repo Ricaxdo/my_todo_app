@@ -151,3 +151,78 @@
     ),
     linear-gradient(to bottom, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
 }
+
+.scrollbar-hover {
+  scrollbar-width: none;
+}
+
+.scrollbar-hover::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollbar-hover::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 9999px;
+}
+
+.scrollbar-hover:hover::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--border));
+}
+@media (min-width: 701px) {
+  .grid-2cols-800 {
+    grid-template-columns: clamp(280px, 32vw, 360px) minmax(0, 1fr);
+  }
+
+  .gap-8-800 {
+    gap: 2rem; /* gap-8 */
+  }
+
+  .sticky-800 {
+    position: sticky;
+    top: 5rem; /* top-20 */
+    align-self: start;
+  }
+
+  /* Bloquear scroll global SOLO en >=801 */
+  .desk-lock {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  /* ✅ Esto era lo que te faltaba: que el “shell” sea flex/height desde 801 */
+  .desk-shell {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  /* ✅ Y el contenedor de contenido también “flex-1” desde 801 */
+  .desk-content {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Scroll interno SOLO en >=801 */
+  .desk-main-scroll {
+    min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 840px) {
+  .text-hero-responsive {
+    font-size: 3rem; /* text-5xl */
+    line-height: 1;
+  }
+
+  .text-subhero-responsive {
+    font-size: 1rem; /* text-base */
+    line-height: 1.5;
+  }
+}
