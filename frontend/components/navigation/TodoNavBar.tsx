@@ -155,7 +155,37 @@ export default function TodoNavBar(props: TodoNavBarProps) {
       {isToday && (
         <div className="hidden min-[780px]:flex flex-1 min-w-0">
           <form onSubmit={onSubmit} className="w-full">
-            <div className="flex items-center gap-2 w-full rounded-xl border border-border/60 bg-background/60 backdrop-blur px-3 py-2">
+            <div
+              className="
+    group flex items-center gap-2 w-full
+    rounded-xl border border-border/60
+    bg-background/60 backdrop-blur
+    px-3 py-2
+    ring-1 ring-border/30
+
+    transition-all duration-200
+    motion-reduce:transition-none
+
+    hover:border-border/80
+    hover:ring-border/50
+    hover:bg-background/70
+    hover:shadow-[0_10px_30px_-18px_rgba(0,0,0,0.45)]
+    hover:-translate-y-[1px]
+
+    focus-within:border-primary/35
+    focus-within:ring-2 focus-within:ring-primary/25
+    focus-within:bg-background/75
+  "
+            >
+              {/* Sheen sutil */}
+              <div
+                className="
+      pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200
+      bg-[radial-gradient(650px_circle_at_10%_0%,rgba(255,255,255,0.10),transparent_55%)]
+      group-hover:opacity-100 group-focus-within:opacity-100
+      rounded-xl
+    "
+              />
               <input
                 value={newTask}
                 onChange={(e) => setNewTask(e.target.value)}
