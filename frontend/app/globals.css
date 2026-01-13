@@ -226,3 +226,11 @@
     line-height: 1.5;
   }
 }
+
+.desk-lock {
+  overflow: hidden;
+  height: 100dvh;
+}
+.desk-lock .desk-main-scroll {
+  overflow: hidden !important;
+}

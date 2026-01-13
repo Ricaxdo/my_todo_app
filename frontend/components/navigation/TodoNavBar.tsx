@@ -13,6 +13,10 @@ import WorkspaceSwitch from "./WorkspaceSwitch";
 
 import { authApi } from "@/services/auth/auth.api";
 
+type TodoNavBarProps = {
+  onOpenFooter: () => void;
+};
+
 /**
  * TodoNavBar
  * - Barra superior del dashboard de tareas
@@ -20,7 +24,7 @@ import { authApi } from "@/services/auth/auth.api";
  * - Switch de workspace (si hay 2)
  * - Menú usuario (perfil + workspace modal + logout)
  */
-export default function TodoNavBar() {
+export default function TodoNavBar({ onOpenFooter }: TodoNavBarProps) {
   const router = useRouter();
 
   const { logout, user, isLoading: isAuthLoading } = useAuth();
@@ -77,15 +81,25 @@ export default function TodoNavBar() {
     <nav className="flex flex-wrap items-center gap-2">
       {/* Logo */}
       <div className="flex items-center gap-2 shrink-0">
-        <span className="font-semibold text-lg tracking-tight hidden max-[350px]:inline">
+        <span className="font-semibold text-lg tracking-tight hidden max-[370px]:inline">
           SF
         </span>
-        <span className="font-semibold text-lg tracking-tight inline max-[350px]:hidden">
+        <span className="font-semibold text-lg tracking-tight inline max-[370px]:hidden">
           StaiFocus
         </span>
       </div>
 
       {/* Acciones (centro) */}
+      <button
+        onClick={() => {
+          onOpenFooter();
+          scrollToId("footer", { duration: 900 });
+        }}
+        className="text-sm text-muted-foreground hover:text-foreground transition"
+      >
+        About it
+      </button>
+
       <div className="flex items-center justify-end gap-0 flex-1 min-w-0">
         {/* Switch de workspace (o Home si no hay 2) */}
         <WorkspaceSwitch

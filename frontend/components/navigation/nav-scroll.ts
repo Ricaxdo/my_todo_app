@@ -16,7 +16,12 @@ function getNavOffset(navId = "app-navbar", extra = 12) {
  */
 export function scrollToId(
   id: string,
-  opts?: { duration?: number; extraOffset?: number; navId?: string }
+  opts?: {
+    duration?: number;
+    extraOffset?: number;
+    navId?: string;
+    onDone?: () => void;
+  }
 ) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -39,7 +44,12 @@ export function scrollToId(
     const eased = easeInOutCubic(t);
 
     window.scrollTo(0, startY + (targetY - startY) * eased);
-    if (t < 1) requestAnimationFrame(step);
+
+    if (t < 1) {
+      requestAnimationFrame(step);
+    } else {
+      opts?.onDone?.();
+    }
   }
 
   requestAnimationFrame(step);
