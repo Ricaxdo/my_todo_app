@@ -8,7 +8,6 @@ import type { AddTaskFormProps } from "./types/addTaskForm.types";
 import { prioritySliderPosition } from "./utils/addTaskForm.utils";
 
 import AssigneesPicker from "./components/AssigneesPicker";
-import DueDatePicker from "./components/DueDatePicker";
 import PrioritySwitch from "./components/PrioritySwitch";
 
 /**
@@ -100,8 +99,6 @@ export default function AddTaskForm(props: AddTaskFormProps) {
               setPriority={setPriority}
               sliderPosition={sliderPosition}
             />
-
-            <DueDatePicker due={due} />
 
             {!isPersonalWorkspace && (
               <AssigneesPicker members={members} asg={asg} />

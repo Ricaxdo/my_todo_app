@@ -21,10 +21,23 @@ type Props = {
 
     assigneeLabel: string;
 
-    /** ✅ NUEVO: permite pintar UI “selected” por miembro */
     isSelected: (id: string) => boolean;
   };
 };
+
+function firstNameOnly(s: string) {
+  return s.trim().split(/\s+/)[0] ?? "";
+}
+
+function compactAssigneeLabel(label: string) {
+  // Si es "Todos", lo dejamos igual
+  if (label.toLowerCase() === "todos") return "Todos";
+
+  // Puede venir tipo "Ricardo, Juan" / "Ricardo +2" / "Ricardo y 2 más"
+  // Nos quedamos con el primer token “humano”
+  const firstChunk = label.split(/[,+]/)[0] ?? label; // antes de coma o '+'
+  return firstNameOnly(firstChunk);
+}
 
 /**
  * Selector de asignados para workspaces compartidos.
@@ -58,6 +71,11 @@ export default function AssigneesPicker({ members, asg }: Props) {
   // Label: si solo está el creador, mostramos su nombre sí o sí.
   const label = onlyOneMember ? singleMemberName : assigneeLabel;
 
+  const labelFull = onlyOneMember ? singleMemberName : assigneeLabel;
+  const labelMobile = onlyOneMember
+    ? firstNameOnly(singleMemberName)
+    : compactAssigneeLabel(assigneeLabel);
+
   return (
     <Popover open={popoverOpen} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
@@ -75,7 +93,16 @@ export default function AssigneesPicker({ members, asg }: Props) {
           }
         >
           <Users className="w-4 h-4" />
-          <span className="max-w-[160px] truncate">{label}</span>
+
+          {/* >=800px: label completo */}
+          <span className="max-w-[160px] truncate hidden min-[880px]:inline">
+            {labelFull}
+          </span>
+
+          {/* <800px: solo primer nombre */}
+          <span className="max-w-[120px] truncate inline min-[880px]:hidden">
+            {labelMobile}
+          </span>
 
           {/* Si está disabled, ocultamos el chevron */}
           {!onlyOneMember && <ChevronDown className="w-3 h-3 opacity-60" />}

@@ -166,28 +166,22 @@
 .scrollbar-hover:hover::-webkit-scrollbar-thumb {
   background-color: hsl(var(--border));
 }
-@media (min-width: 701px) {
+@media (min-width: 780px) {
   .grid-2cols-800 {
     grid-template-columns: clamp(280px, 32vw, 360px) minmax(0, 1fr);
   }
 
   .gap-8-800 {
-    gap: 2rem; /* gap-8 */
+    gap: 2rem;
   }
 
   .sticky-800 {
     position: sticky;
-    top: 5rem; /* top-20 */
+    top: 5rem;
     align-self: start;
   }
 
-  /* Bloquear scroll global SOLO en >=801 */
-  .desk-lock {
-    height: 100dvh;
-    overflow: hidden;
-  }
-
-  /* ✅ Esto era lo que te faltaba: que el “shell” sea flex/height desde 801 */
+  /* “Shell” desktop */
   .desk-shell {
     height: 100%;
     display: flex;
@@ -195,7 +189,6 @@
     min-height: 0;
   }
 
-  /* ✅ Y el contenedor de contenido también “flex-1” desde 801 */
   .desk-content {
     flex: 1;
     min-height: 0;
@@ -203,7 +196,7 @@
     flex-direction: column;
   }
 
-  /* Scroll interno SOLO en >=801 */
+  /* Scroll interno SOLO desde 780 */
   .desk-main-scroll {
     min-width: 0;
     min-height: 0;

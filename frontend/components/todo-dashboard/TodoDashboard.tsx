@@ -7,12 +7,12 @@ import { Card } from "@/components/ui/card";
 
 import { useFooterNavigation } from "@/components/todos/hooks/useFooterNavigation";
 
-import AddTaskForm from "../add-task-form/AddTaskForm";
 import TaskList from "../task-list/TaskList";
 import TodoStats from "../todo-stats/TodoStats";
 import TodoHeader from "../todos/TodoHeader";
 import ToolBar from "../tool-bar/ToolBar";
 
+import AddTaskForm from "@/components/add-task-form/AddTaskForm";
 import TodoFooter from "@/components/todos/TodoFooter";
 
 import { useState } from "react";
@@ -63,11 +63,11 @@ export default function TodoDashboard() {
       className={[
         "h-[100dvh] bg-background text-foreground font-sans selection:bg-primary/20",
         footerOpen ? "desk-lock" : "",
-        "overflow-y-auto lg:overflow-hidden",
-        "[--nav-h:64px]", // 👈 ajusta si tu navbar mide otra cosa
+        // ✅ breakpoint real: 780
+        "overflow-y-auto min-[780px]:overflow-hidden",
+        "[--nav-h:64px]",
       ].join(" ")}
     >
-      {/* Wrapper general */}
       <div className="relative w-full px-4 pb-6 lg:px-8 lg:pb-10 desk-shell h-full min-h-0 flex flex-col">
         {/* Navbar sticky */}
         <div
@@ -76,15 +76,26 @@ export default function TodoDashboard() {
         >
           <div className="max-w-[1600px] mx-auto">
             <TodoNavBar
-              onOpenFooter={() => {
-                openFooter();
-              }}
+              onOpenFooter={openFooter}
+              isToday={isToday}
+              newTask={newTask}
+              setNewTask={setNewTask}
+              onSubmit={handleAddTask}
+              priority={priority}
+              setPriority={setPriority}
+              dueDate={dueDate}
+              setDueDate={setDueDate}
+              isPersonalWorkspace={isPersonalWorkspace}
+              meId={meId ?? ""}
+              members={members}
+              assignees={assignees}
+              setAssignees={setAssignees}
             />
           </div>
         </div>
 
         {/* Contenido */}
-        <div className="max-w-[1600px] mx-auto w-full desk-content min-h-0 lg:h-[calc(100dvh-var(--nav-h))]">
+        <div className="max-w-[1600px] mx-auto w-full desk-content min-h-0 min-[780px]:h-[calc(100dvh-var(--nav-h))]">
           {/* Header */}
           <section
             id="home"
@@ -100,7 +111,7 @@ export default function TodoDashboard() {
             // =========================
             // LOADING
             // =========================
-            <div className="grid grid-cols-1 grid-2cols-800 gap-6 gap-8-800 flex-1 min-h-0 lg:flex-1 lg:min-h-0">
+            <div className="grid grid-cols-1 grid-2cols-800 gap-6 gap-8-800 flex-1 min-h-0">
               <aside className="space-y-6">
                 <Card className="p-6 space-y-3 sticky-800">
                   <div className="h-4 w-40 animate-pulse rounded bg-muted" />
@@ -108,7 +119,8 @@ export default function TodoDashboard() {
                 </Card>
               </aside>
 
-              <main className="space-y-6 desk-main-scroll scrollbar-hover overflow-visible lg:overflow-y-auto lg:min-h-0">
+              {/* ✅ antes era lg:overflow-y-auto -> ahora 780 */}
+              <main className="space-y-6 desk-main-scroll scrollbar-hover overflow-visible min-[780px]:overflow-y-auto min-[780px]:min-h-0">
                 <Card className="p-6 space-y-3">
                   <div className="h-4 w-32 animate-pulse rounded bg-muted" />
                   <div className="h-10 w-full animate-pulse rounded bg-muted" />
@@ -129,34 +141,17 @@ export default function TodoDashboard() {
             // =========================
             // NORMAL
             // =========================
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 lg:gap-8 flex-1 min-h-0 lg:flex-1 lg:min-h-0">
-              <main className="space-y-6 desk-main-scroll scrollbar-hover overflow-visible lg:overflow-y-auto lg:min-h-0 order-1">
-                {isToday ? (
-                  <section className="relative">
-                    {/* Spotlight effect detrás del form */}
-                    <div className="absolute -inset-16 bg-gradient-radial from-primary/5 via-transparent to-transparent pointer-events-none" />
-
-                    <AddTaskForm
-                      newTask={newTask}
-                      setNewTask={setNewTask}
-                      onSubmit={handleAddTask}
-                      priority={priority}
-                      setPriority={setPriority}
-                      dueDate={dueDate}
-                      setDueDate={setDueDate}
-                      isPersonalWorkspace={isPersonalWorkspace}
-                      meId={meId ?? ""}
-                      members={members}
-                      assignees={assignees}
-                      setAssignees={setAssignees}
-                    />
-                  </section>
-                ) : (
-                  <Card className="p-6 border-border/50">
-                    No puedes crear tareas en días pasados.
-                  </Card>
-                )}
-
+            <div className="grid grid-cols-1 min-[780px]:grid-cols-[1fr_320px] gap-6 min-[780px]:gap-8 flex-1 min-h-0">
+              {/* ✅ pb-28 en mobile para que el AddTask fijo no tape el final */}
+              <main
+                className="
+                  space-y-6
+                  desk-main-scroll scrollbar-hover
+                  overflow-visible min-[780px]:overflow-y-auto min-[780px]:min-h-0
+                  order-2 min-[780px]:order-1
+                  pb-28 min-[780px]:pb-0
+                "
+              >
                 <section id="tasks" className="relative space-y-6">
                   <div id="tasks-anchor" className="absolute -top-6 h-1 w-1" />
 
@@ -178,7 +173,7 @@ export default function TodoDashboard() {
                 <div className="h-6" />
               </main>
 
-              <aside className="self-start min-h-0 overflow-visible lg:overflow-y-auto scrollbar-hover order-2 lg:sticky lg:top-[calc(var(--nav-h)+1rem)]">
+              <aside className="self-start min-h-0 overflow-visible scrollbar-hover order-1 min-[780px]:order-2 min-[780px]:sticky min-[780px]:top-[calc(var(--nav-h)+1rem)]">
                 <div className="space-y-4">
                   <section id="progress">
                     <TodoStats
@@ -196,15 +191,32 @@ export default function TodoDashboard() {
         </div>
       </div>
 
-      {/* =========================
-          FOOTER OVERLAY FULL SCREEN
-         ========================= */}
+      {/* AddTask fijo en mobile (<780) */}
+      {isToday && !footerOpen && (
+        <div className="min-[780px]:hidden fixed bottom-0 left-0 right-0 z-50">
+          <div className="bg-background/85 backdrop-blur border-t border-border/50 px-4 py-3">
+            <AddTaskForm
+              newTask={newTask}
+              setNewTask={setNewTask}
+              onSubmit={handleAddTask}
+              priority={priority}
+              setPriority={setPriority}
+              dueDate={dueDate}
+              setDueDate={setDueDate}
+              isPersonalWorkspace={isPersonalWorkspace}
+              meId={meId ?? ""}
+              members={members}
+              assignees={assignees}
+              setAssignees={setAssignees}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Footer overlay */}
       {footerOpen && (
         <div className="fixed inset-0 z-[60] bg-background">
-          {/* backdrop suave (opcional) */}
           <div className="absolute inset-0 bg-black/30" />
-
-          {/* contenido del footer */}
           <div className="relative h-full overflow-y-auto overscroll-contain touch-pan-y [webkit-overflow-scrolling:touch]">
             <section id="footer" className="min-h-[100dvh]">
               <TodoFooter
