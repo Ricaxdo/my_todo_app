@@ -209,7 +209,18 @@ export default function TodoNavBar(props: TodoNavBarProps) {
 
               <button
                 type="submit"
-                className="text-sm px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition shrink-0"
+                className="
+    shrink-0 text-sm px-3 py-1.5 rounded-lg
+    bg-primary text-primary-foreground
+    ring-1 ring-primary/25
+
+    transition-all duration-200
+    hover:opacity-95 hover:-translate-y-[1px]
+    active:translate-y-0 active:opacity-90
+
+    focus-visible:outline-none
+    focus-visible:ring-2 focus-visible:ring-primary/35
+  "
               >
                 +
               </button>
