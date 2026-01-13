@@ -84,7 +84,7 @@ export default function AddTaskForm(props: AddTaskFormProps) {
               onChange={(e) => setNewTask(e.target.value)}
               placeholder="¿Qué quieres lograr hoy?"
               className="
-              flex-1 min-w-0 bg-transparent border-none outline-none
+               min-w-0 bg-transparent border-none outline-none
               text-[17px] sm:text-lg
               placeholder:text-muted-foreground/60
               h-11

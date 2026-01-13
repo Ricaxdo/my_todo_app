@@ -59,7 +59,7 @@ export default function PrioritySwitch({
               type="button"
               onClick={() => setPriority(level)}
               className={[
-                "h-9 w-9 grid place-items-center rounded-full transition-colors",
+                "h-7 w-7   grid place-items-center rounded-full transition-colors",
                 isActive ? "bg-background/80 border border-border/60" : "",
               ].join(" ")}
               aria-label={`Priority ${labelFor(level)}`}
