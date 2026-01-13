@@ -65,7 +65,7 @@ export default function WorkspaceSwitch({
   return (
     <>
       {/* MOBILE (<399px): 1 botón, click = toggle */}
-      <div className="hidden max-[398px]:block w-[120px] order-3">
+      <div className="block min-[1023px]:hidden w-[120px]">
         <button
           type="button"
           onClick={toggleWorkspace}
@@ -81,14 +81,14 @@ export default function WorkspaceSwitch({
       </div>
 
       {/* DESKTOP (>=399px): switch segmentado */}
-      <div className="hidden min-[399px]:block">
+      <div className="hidden min-[1023px]:block">
         <div
           className={cn(
             "relative flex items-center rounded-xl border border-border bg-muted/30 p-1",
-            "w-[100px] min-[399px]:w-[240px]"
+            "w-[240px]"
           )}
         >
-          {/* Pill animado */}
+          {/* Pill */}
           <div
             className={cn(
               "absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-lg bg-background shadow-sm",
@@ -101,28 +101,26 @@ export default function WorkspaceSwitch({
             type="button"
             onClick={() => switchWorkspace(personalWs.id)}
             className={cn(
-              "relative z-10 flex-1 px-3 py-2 text-sm font-medium rounded-lg",
-              "transition-colors duration-200 min-w-0",
+              "relative z-10 flex-1 px-3 py-2 text-sm font-medium rounded-lg truncate",
               !isExtraActive
                 ? "text-foreground"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            <span className="truncate block">{personalWs.name}</span>
+            {personalWs.name}
           </button>
 
           <button
             type="button"
             onClick={() => switchWorkspace(extraWs.id)}
             className={cn(
-              "relative z-10 flex-1 px-3 py-2 text-sm font-medium rounded-lg",
-              "transition-colors duration-200 min-w-0",
+              "relative z-10 flex-1 px-3 py-2 text-sm font-medium rounded-lg truncate",
               isExtraActive
                 ? "text-foreground"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            <span className="truncate block">{extraWs.name}</span>
+            {extraWs.name}
           </button>
         </div>
       </div>
