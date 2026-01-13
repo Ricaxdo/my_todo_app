@@ -67,14 +67,12 @@ export default function TodoDashboard() {
         "[--nav-h:64px]", // 👈 ajusta si tu navbar mide otra cosa
       ].join(" ")}
     >
-      <div className="fixed inset-0 bg-grid-white pointer-events-none opacity-[0.05]" />
-
       {/* Wrapper general */}
       <div className="relative w-full px-4 pb-6 lg:px-8 lg:pb-10 desk-shell h-full min-h-0 flex flex-col">
         {/* Navbar sticky */}
         <div
           id="app-navbar"
-          className="sticky top-0 z-50 -mx-4 lg:-mx-8 px-4 lg:px-8 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/60 bg-background/80 border-b border-border"
+          className="sticky top-0 z-50 -mx-4 lg:-mx-8 px-4 lg:px-8 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/60 bg-background/80 border-b border-border/50"
         >
           <div className="max-w-[1600px] mx-auto">
             <TodoNavBar
@@ -131,24 +129,13 @@ export default function TodoDashboard() {
             // =========================
             // NORMAL
             // =========================
-            <div className="grid grid-cols-1 grid-2cols-800 gap-6 gap-8-800 flex-1 min-h-0 lg:flex-1 lg:min-h-0">
-              <aside className="self-start min-h-0 overflow-y-auto scrollbar-hover">
-                <div className="space-y-6 sticky-800">
-                  <section id="progress">
-                    <TodoStats
-                      activeCount={activeCount}
-                      userActiveCount={userActiveCount}
-                      completionRate={completionRate}
-                      selectedDate={selectedDate}
-                      onChangeDate={setSelectedDate}
-                    />
-                  </section>
-                </div>
-              </aside>
-
-              <main className="space-y-6 desk-main-scroll scrollbar-hover overflow-visible lg:overflow-y-auto lg:min-h-0">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 lg:gap-8 flex-1 min-h-0 lg:flex-1 lg:min-h-0">
+              <main className="space-y-6 desk-main-scroll scrollbar-hover overflow-visible lg:overflow-y-auto lg:min-h-0 order-1">
                 {isToday ? (
                   <section className="relative">
+                    {/* Spotlight effect detrás del form */}
+                    <div className="absolute -inset-16 bg-gradient-radial from-primary/5 via-transparent to-transparent pointer-events-none" />
+
                     <AddTaskForm
                       newTask={newTask}
                       setNewTask={setNewTask}
@@ -165,7 +152,7 @@ export default function TodoDashboard() {
                     />
                   </section>
                 ) : (
-                  <Card className="p-6">
+                  <Card className="p-6 border-border/50">
                     No puedes crear tareas en días pasados.
                   </Card>
                 )}
@@ -190,6 +177,20 @@ export default function TodoDashboard() {
 
                 <div className="h-6" />
               </main>
+
+              <aside className="self-start min-h-0 overflow-visible lg:overflow-y-auto scrollbar-hover order-2 lg:sticky lg:top-[calc(var(--nav-h)+1rem)]">
+                <div className="space-y-4">
+                  <section id="progress">
+                    <TodoStats
+                      activeCount={activeCount}
+                      userActiveCount={userActiveCount}
+                      completionRate={completionRate}
+                      selectedDate={selectedDate}
+                      onChangeDate={setSelectedDate}
+                    />
+                  </section>
+                </div>
+              </aside>
             </div>
           )}
         </div>

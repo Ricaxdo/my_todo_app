@@ -17,13 +17,13 @@ export default function TodoHeader({ onCollapsedChange }: Props) {
   return (
     <header
       onClick={() => setCollapsed((v) => !v)}
-      className="rounded-lg  cursor-pointer select-none"
+      className="rounded-lg cursor-pointer select-none"
       title="👀 click"
     >
       <div>
         <h1
           className={cn(
-            "font-bold  from-white to-black transition-all duration-300 ease-out",
+            "font-bold transition-all duration-300 ease-out",
             collapsed
               ? "text-3xl font-bold pb-1"
               : "text-6xl text-hero-responsive pb-4"
@@ -35,7 +35,7 @@ export default function TodoHeader({ onCollapsedChange }: Props) {
 
       <p
         className={cn(
-          "text-lg text-subhero-responsive text-muted-foreground w-full font-light overflow-hidden transition-all duration-300 ease-out",
+          "text-lg text-subhero-responsive text-muted-foreground/80 w-full font-light overflow-hidden transition-all duration-300 ease-out",
           collapsed ? "max-h-0 opacity-0" : "max-h-40 opacity-100"
         )}
       >
