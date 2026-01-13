@@ -148,20 +148,22 @@ export default function TodoDashboard() {
 
               <main className="space-y-6 desk-main-scroll scrollbar-hover overflow-visible lg:overflow-y-auto lg:min-h-0">
                 {isToday ? (
-                  <AddTaskForm
-                    newTask={newTask}
-                    setNewTask={setNewTask}
-                    onSubmit={handleAddTask}
-                    priority={priority}
-                    setPriority={setPriority}
-                    dueDate={dueDate}
-                    setDueDate={setDueDate}
-                    isPersonalWorkspace={isPersonalWorkspace}
-                    meId={meId ?? ""}
-                    members={members}
-                    assignees={assignees}
-                    setAssignees={setAssignees}
-                  />
+                  <section className="relative">
+                    <AddTaskForm
+                      newTask={newTask}
+                      setNewTask={setNewTask}
+                      onSubmit={handleAddTask}
+                      priority={priority}
+                      setPriority={setPriority}
+                      dueDate={dueDate}
+                      setDueDate={setDueDate}
+                      isPersonalWorkspace={isPersonalWorkspace}
+                      meId={meId ?? ""}
+                      members={members}
+                      assignees={assignees}
+                      setAssignees={setAssignees}
+                    />
+                  </section>
                 ) : (
                   <Card className="p-6">
                     No puedes crear tareas en días pasados.

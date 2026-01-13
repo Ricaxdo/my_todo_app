@@ -53,42 +53,60 @@ export default function AddTaskForm(props: AddTaskFormProps) {
   const sliderPosition = prioritySliderPosition(priority);
 
   return (
-    <form onSubmit={onSubmit} className="relative group">
-      {/* Glow decorativo en hover (no afecta layout) */}
-      <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/5 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+    <form onSubmit={onSubmit} className="relative">
+      {/* Halo suave (no invade, no “pulse”) */}
+      <div className="pointer-events-none absolute -top-10 -right-10 h-44 w-44 rounded-full bg-primary/12 blur-3xl opacity-60" />
 
-      {/* Card del form: mejora UX con focus-within para resaltar al escribir */}
-      <div className="relative p-3 bg-card border border-border rounded-xl shadow-2xl transition-all focus-within:ring-1 focus-within:ring-white/20 focus-within:border-white/20">
-        {/* Input principal: título/descripcion corta de la tarea */}
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-secondary rounded-lg text-muted-foreground shrink-0">
-            <Plus className="w-5 h-5" />
+      {/* Card principal (zona protagonista) */}
+      <div
+        className="
+        relative overflow-hidden rounded-2xl
+        border border-border/60
+        bg-card/85 backdrop-blur supports-[backdrop-filter]:bg-card/70
+        shadow-[0_18px_55px_-45px_rgba(0,0,0,0.55)]
+        ring-1 ring-border/40
+        transition
+        focus-within:border-primary/25
+      "
+      >
+        {/* Hairline superior sutil */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+
+        <div className="p-4 sm:p-5">
+          {/* Input principal */}
+          <div className="flex items-center gap-3">
+            <div className="shrink-0 rounded-xl bg-secondary/80 p-3 text-muted-foreground ring-1 ring-border/40">
+              <Plus className="h-5 w-5" />
+            </div>
+
+            <input
+              type="text"
+              value={newTask}
+              onChange={(e) => setNewTask(e.target.value)}
+              placeholder="¿Qué quieres lograr hoy?"
+              className="
+              flex-1 min-w-0 bg-transparent border-none outline-none
+              text-[17px] sm:text-lg
+              placeholder:text-muted-foreground/60
+              h-11
+            "
+            />
           </div>
 
-          <input
-            type="text"
-            value={newTask}
-            onChange={(e) => setNewTask(e.target.value)}
-            placeholder="Crea una nueva tarea"
-            className="flex-1 min-w-0 bg-transparent border-none outline-none text-lg placeholder:text-muted-foreground/50 h-10"
-          />
-        </div>
+          {/* Controles secundarios */}
+          <div className="mt-4 flex items-center gap-3 flex-wrap">
+            <PrioritySwitch
+              priority={priority}
+              setPriority={setPriority}
+              sliderPosition={sliderPosition}
+            />
 
-        {/* Controles secundarios: prioridad / vencimiento / asignados */}
-        <div className="mt-3 flex items-center gap-3 flex-wrap">
-          <PrioritySwitch
-            priority={priority}
-            setPriority={setPriority}
-            sliderPosition={sliderPosition}
-          />
+            <DueDatePicker due={due} />
 
-          <DueDatePicker due={due} />
-
-          {/* Regla de negocio en UI:
-              En workspace personal NO se muestran asignados (siempre soy yo). */}
-          {!isPersonalWorkspace && (
-            <AssigneesPicker members={members} asg={asg} />
-          )}
+            {!isPersonalWorkspace && (
+              <AssigneesPicker members={members} asg={asg} />
+            )}
+          </div>
         </div>
       </div>
     </form>
