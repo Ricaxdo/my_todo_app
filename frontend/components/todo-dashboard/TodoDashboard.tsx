@@ -5,7 +5,6 @@ import { scrollToId } from "@/components/navigation/nav-scroll";
 import { useTodoDashboard } from "@/components/todo-dashboard";
 import { Card } from "@/components/ui/card";
 
-import { useNeedsAsideNudge } from "@/components/todo-dashboard/useNeedsAsideNudge"; // ponlo donde te guste
 import { useFooterNavigation } from "@/components/todos/hooks/useFooterNavigation";
 
 import AddTaskForm from "../add-task-form/AddTaskForm";
@@ -16,7 +15,7 @@ import ToolBar from "../tool-bar/ToolBar";
 
 import TodoFooter from "@/components/todos/TodoFooter";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 
 function startOfDay(d: Date) {
   const x = new Date(d);
@@ -59,9 +58,6 @@ export default function TodoDashboard() {
   const { footerOpen, openFooter, closeFooter } = useFooterNavigation();
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
 
-  const gridAreaRef = useRef<HTMLDivElement>(null);
-  const needsAsideNudge = useNeedsAsideNudge(gridAreaRef, { thresholdPx: 24 });
-
   return (
     <div
       className={[
@@ -95,7 +91,7 @@ export default function TodoDashboard() {
           <section
             id="home"
             className={[
-              "pt-5 lg:pt-5 z-100",
+              "pt-5 lg:pt-5 z-10",
               headerCollapsed ? "pb-1 lg:pb-1" : "pb-4 lg:pb-3",
             ].join(" ")}
           >
