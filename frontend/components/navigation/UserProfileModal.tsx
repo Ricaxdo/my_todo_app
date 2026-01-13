@@ -166,7 +166,6 @@ export function UserProfileModal({
                     variant="destructive"
                     disabled={!onDeleteAccount}
                     onClick={() => {
-                      // ✅ reinicia cooldown SIEMPRE al abrir confirm
                       setCooldown(COOLDOWN_SECONDS);
                       setConfirmOpen(true);
                     }}
@@ -180,7 +179,6 @@ export function UserProfileModal({
         </DialogContent>
       </Dialog>
 
-      {/* ✅ Confirm AlertDialog (con cooldown) */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

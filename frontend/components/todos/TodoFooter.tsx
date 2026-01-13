@@ -21,7 +21,6 @@ export default function TodoFooter({ onBack }: TodoFooterProps) {
             min-h-0
           "
         >
-          {/* ✅ Un solo scroll: Header + Cards (el botón queda fuera) */}
           <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain [webkit-overflow-scrolling:touch]">
             {/* Header */}
             <div className="mb-6 lg:mb-7">
@@ -154,7 +153,6 @@ export default function TodoFooter({ onBack }: TodoFooterProps) {
             </div>
           </div>
 
-          {/* ✅ CTA fijo/visible (fuera del scroll) */}
           <div className="pt-4 pb-6 lg:pb-8 shrink-0">
             <button
               onClick={onBack}

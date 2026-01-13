@@ -20,28 +20,19 @@ import { useAssignees } from "@/components/add-task-form/hooks/useAssignees";
 
 import { authApi } from "@/services/auth/auth.api";
 
-// ✅ Tipos mínimos (evitan any)
-// Ajusta Member si ya tienes un type real (mejor).
 type NavMember = { id: string; name: string };
 
-/**
- * Si ya tienes Priority en tu repo (ej: "@/types/types"),
- * cámbialo aquí y borra este union.
- */
 type Priority = "low" | "medium" | "high";
 
 type TodoNavBarProps = {
   onOpenFooter: () => void;
 
-  // ✅ AddTask props
   isToday: boolean;
   newTask: string;
   setNewTask: (v: string) => void;
 
-  // Si tu handler es onSubmit de form:
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
 
-  // (por ahora NO usamos estos en el navbar compacto, pero los recibimos)
   priority: Priority;
   setPriority: (p: Priority) => void;
   dueDate: Date;
@@ -161,7 +152,6 @@ export default function TodoNavBar(props: TodoNavBarProps) {
         </button>
       </div>
 
-      {/* CENTER: ✅ ocupa TODO lo libre */}
       {isToday && (
         <div className="hidden min-[780px]:flex flex-1 min-w-0">
           <form onSubmit={onSubmit} className="w-full">
@@ -173,7 +163,6 @@ export default function TodoNavBar(props: TodoNavBarProps) {
                 className="flex-1 min-w-0 bg-transparent outline-none text-sm placeholder:text-muted-foreground/60"
               />
 
-              {/* 👇 Asignaciones (solo shared) */}
               {!isPersonalWorkspace && (
                 <div className="shrink-0">
                   <AssigneesPicker members={members} asg={asg} />
