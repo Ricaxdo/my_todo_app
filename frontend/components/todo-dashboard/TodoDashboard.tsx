@@ -5,6 +5,7 @@ import { scrollToId } from "@/components/navigation/nav-scroll";
 import { useTodoDashboard } from "@/components/todo-dashboard";
 import { Card } from "@/components/ui/card";
 
+import { useNeedsAsideNudge } from "@/components/todo-dashboard/useNeedsAsideNudge"; // ponlo donde te guste
 import { useFooterNavigation } from "@/components/todos/hooks/useFooterNavigation";
 
 import AddTaskForm from "../add-task-form/AddTaskForm";
@@ -14,6 +15,8 @@ import TodoHeader from "../todos/TodoHeader";
 import ToolBar from "../tool-bar/ToolBar";
 
 import TodoFooter from "@/components/todos/TodoFooter";
+
+import { useRef, useState } from "react";
 
 function startOfDay(d: Date) {
   const x = new Date(d);
@@ -54,13 +57,18 @@ export default function TodoDashboard() {
 
   const isToday = isSameDay(selectedDate, new Date());
   const { footerOpen, openFooter, closeFooter } = useFooterNavigation();
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
+
+  const gridAreaRef = useRef<HTMLDivElement>(null);
+  const needsAsideNudge = useNeedsAsideNudge(gridAreaRef, { thresholdPx: 24 });
 
   return (
     <div
       className={[
         "h-[100dvh] bg-background text-foreground font-sans selection:bg-primary/20",
         footerOpen ? "desk-lock" : "",
-        "overflow-y-auto lg:overflow-hidden", // mobile scroll / desktop lock
+        "overflow-y-auto lg:overflow-hidden",
+        "[--nav-h:64px]", // 👈 ajusta si tu navbar mide otra cosa
       ].join(" ")}
     >
       <div className="fixed inset-0 bg-grid-white pointer-events-none opacity-[0.05]" />
@@ -82,10 +90,16 @@ export default function TodoDashboard() {
         </div>
 
         {/* Contenido */}
-        <div className="max-w-[1600px] mx-auto w-full desk-content flex-1 min-h-0">
+        <div className="max-w-[1600px] mx-auto w-full desk-content min-h-0 lg:h-[calc(100dvh-var(--nav-h))]">
           {/* Header */}
-          <section id="home" className="pt-5 pb-4 lg:pt-5 lg:pb-3">
-            <TodoHeader />
+          <section
+            id="home"
+            className={[
+              "pt-5 lg:pt-5 z-100",
+              headerCollapsed ? "pb-1 lg:pb-1" : "pb-4 lg:pb-3",
+            ].join(" ")}
+          >
+            <TodoHeader onCollapsedChange={setHeaderCollapsed} />
           </section>
 
           {isWorkspaceSwitching ? (
@@ -122,7 +136,7 @@ export default function TodoDashboard() {
             // NORMAL
             // =========================
             <div className="grid grid-cols-1 grid-2cols-800 gap-6 gap-8-800 flex-1 min-h-0 lg:flex-1 lg:min-h-0">
-              <aside className="min-h-0 overflow-y-auto scrollbar-hover">
+              <aside className="self-start min-h-0 overflow-y-auto scrollbar-hover">
                 <div className="space-y-6 sticky-800">
                   <section id="progress">
                     <TodoStats
