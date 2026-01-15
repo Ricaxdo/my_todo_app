@@ -30,7 +30,7 @@ export default function AuthShell({
               <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-b from-white via-zinc-200 to-zinc-400 shadow-sm">
                 <CheckCircle2 className="w-6 h-6 text-zinc-700" />
               </div>
-              <h1 className="text-4xl font-extrabold bg-gradient-to-b from-white via-gray-200 to-gray-600 bg-clip-text text-transparent tracking-tight">
+              <h1 className="text-4xl font-extrabold bg-gradient-to-b from-black via-neutral-800 to-neutral-700 bg-clip-text text-transparent">
                 StaiFocus
               </h1>
             </div>
