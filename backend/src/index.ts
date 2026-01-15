@@ -11,13 +11,12 @@ async function bootstrap() {
     console.log(`[backend] Servidor corriendo en puerto ${port}`);
   });
 
-  // Conecta DB después de levantar el server (Cloud Run ya verá el puerto)
   try {
     await connectDB();
     console.log("[backend] DB conectada");
   } catch (err) {
-    console.error("[backend] No se pudo conectar a DB:", err);
-    // En producción puedes decidir si matar el proceso o no:
+    console.error("[backend] Error conectando a DB:", err);
+    // Si quieres forzar que se caiga si no hay DB, descomenta:
     // process.exit(1);
   }
 }

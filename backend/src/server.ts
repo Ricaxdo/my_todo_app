@@ -38,7 +38,7 @@ const corsOptions: cors.CorsOptions = {
 app.use(cors(corsOptions));
 
 // ✅ CLAVE: responder preflight para todas las rutas
-app.options("*", cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
 
 app.use(express.json());
 
