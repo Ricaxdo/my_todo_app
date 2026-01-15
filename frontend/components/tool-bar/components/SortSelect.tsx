@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowUpDown } from "lucide-react";
-import type { SortOption } from "./types/toolbar.types";
+import type { SortOption } from "../types/toolbar.types";
 
 type Props = {
   value: SortOption;

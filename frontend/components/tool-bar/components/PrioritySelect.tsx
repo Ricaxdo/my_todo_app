@@ -1,7 +1,7 @@
 "use client";
 
 import { SlidersHorizontal } from "lucide-react";
-import type { PriorityFilter } from "./types/toolbar.types";
+import type { PriorityFilter } from "../types/toolbar.types";
 
 type Props = {
   value: PriorityFilter;
