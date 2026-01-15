@@ -3,7 +3,6 @@
 import { Plus } from "lucide-react";
 
 import { useAssignees } from "./hooks/useAssignees";
-import { useDueDate } from "./hooks/useDueDate";
 import type { AddTaskFormProps } from "./types/addTaskForm.types";
 import { prioritySliderPosition } from "./utils/addTaskForm.utils";
 
@@ -17,16 +16,12 @@ export default function AddTaskForm(props: AddTaskFormProps) {
     priority,
     setPriority,
     onSubmit,
-    dueDate,
-    setDueDate,
     isPersonalWorkspace,
     meId,
     members,
     assignees,
     setAssignees,
   } = props;
-
-  const due = useDueDate({ dueDate, setDueDate });
 
   const asg = useAssignees({
     isPersonalWorkspace,

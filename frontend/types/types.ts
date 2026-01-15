@@ -8,7 +8,7 @@ export interface BackendTask {
   category: string;
   createdAt: string;
   updatedAt?: string;
-  dueDate?: string | null; // ✅ AÑADIR
+  dueDate?: string | null;
   assignees: string[];
 }
 
@@ -20,6 +20,6 @@ export interface Task {
   category: string;
   createdAt: Date;
   updatedAt?: Date;
-  dueDate?: Date | null; // ✅ AÑADIR
+  dueDate?: Date | null;
   assignees?: string[];
 }

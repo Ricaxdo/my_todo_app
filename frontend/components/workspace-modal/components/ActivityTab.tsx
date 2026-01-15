@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import type { ActivityItem } from "@/types/activity.types"; // 👈 usa el tipo real
+import type { ActivityItem } from "@/types/activity.types";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { formatActivity } from "../utils/activity.format";

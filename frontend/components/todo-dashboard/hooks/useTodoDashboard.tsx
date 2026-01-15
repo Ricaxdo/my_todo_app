@@ -186,7 +186,6 @@ export function useTodoDashboard() {
     async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
 
-      // ✅ Guardia dura: no crear tasks si no es hoy
       if (!canCreateOnSelectedDay) {
         setError("Solo puedes crear tareas en el día actual.");
         return;
@@ -224,7 +223,7 @@ export function useTodoDashboard() {
       }
     },
     [
-      canCreateOnSelectedDay, // ✅ IMPORTANTE
+      canCreateOnSelectedDay,
       newTask,
       todosBase,
       isPersonalWorkspace,

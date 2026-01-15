@@ -151,7 +151,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       await authApi.signup(payload);
-      // ⚠️ Backend no devuelve token en signup
       // Si en el futuro lo hace, aquí guardarías token + refreshMe()
     } catch (err: unknown) {
       setError(getErrorMessage(err));

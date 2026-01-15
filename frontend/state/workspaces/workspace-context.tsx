@@ -24,6 +24,8 @@ import {
 } from "./workspace.storage";
 import type { WorkspaceCtx } from "./workspace.types";
 
+export type { Workspace } from "@/services/workspaces/workspaces.types";
+
 const Ctx = createContext<WorkspaceCtx | null>(null);
 
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {

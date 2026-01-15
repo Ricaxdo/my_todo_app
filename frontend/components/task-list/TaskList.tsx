@@ -37,7 +37,6 @@ function sortTasks(tasks: Task[]): Task[] {
     const dateB =
       b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
 
-    // 👇 DESC = más reciente primero
     return dateB.getTime() - dateA.getTime();
   };
 

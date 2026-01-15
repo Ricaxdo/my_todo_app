@@ -68,9 +68,6 @@ export default function AssigneesPicker({ members, asg }: Props) {
     setIsAssignPopoverOpen(v);
   };
 
-  // Label: si solo está el creador, mostramos su nombre sí o sí.
-  const label = onlyOneMember ? singleMemberName : assigneeLabel;
-
   const labelFull = onlyOneMember ? singleMemberName : assigneeLabel;
   const labelMobile = onlyOneMember
     ? firstNameOnly(singleMemberName)
