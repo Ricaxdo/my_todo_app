@@ -1,10 +1,10 @@
-import TodoDashboard from "@/components/TodoDashboard";
+import LoginForm from "@/components/auth/login/LoginForm";
+import { RedirectIfAuth } from "@/components/auth/RedirectIfAuth";
 
-export const metadata = {
-  title: "Focus | Modern Todo App",
-  description: "A minimalist todo application for focused work.",
-};
-
-export default function Page() {
-  return <TodoDashboard />;
+export default function HomePage() {
+  return (
+    <RedirectIfAuth>
+      <LoginForm />
+    </RedirectIfAuth>
+  );
 }

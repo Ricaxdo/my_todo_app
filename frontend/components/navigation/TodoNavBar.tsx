@@ -1,0 +1,255 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import type React from "react";
+import { useMemo, useState } from "react";
+
+import { useTodoDashboard } from "@/components/todo-dashboard/hooks/useTodoDashboard";
+import { useAuth } from "@/state/auth/auth-context";
+import { useWorkspaces } from "@/state/workspaces/workspace-context";
+
+import PrioritySwitch from "@/components/add-task-form/components/PrioritySwitch";
+import { prioritySliderPosition } from "@/components/add-task-form/utils/addTaskForm.utils";
+
+import { scrollToId } from "./nav-scroll";
+import UserMenu from "./UserMenu";
+import WorkspaceSwitch from "./WorkspaceSwitch";
+
+import AssigneesPicker from "@/components/add-task-form/components/AssigneesPicker";
+import { useAssignees } from "@/components/add-task-form/hooks/useAssignees";
+
+import { authApi } from "@/services/auth/auth.api";
+
+type NavMember = { id: string; name: string };
+
+type Priority = "low" | "medium" | "high";
+
+type TodoNavBarProps = {
+  onOpenFooter: () => void;
+
+  isToday: boolean;
+  newTask: string;
+  setNewTask: (v: string) => void;
+
+  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+
+  priority: Priority;
+  setPriority: (p: Priority) => void;
+  dueDate: Date;
+  setDueDate: React.Dispatch<React.SetStateAction<Date>>;
+
+  isPersonalWorkspace: boolean;
+  meId: string;
+  members: NavMember[];
+  assignees: string[];
+  setAssignees: React.Dispatch<React.SetStateAction<string[]>>;
+};
+
+/**
+ * TodoNavBar
+ * - Barra superior del dashboard de tareas
+ * - Acciones: scroll a secciones (progress/tasks/home)
+ * - Switch de workspace (si hay 2)
+ * - Menú usuario (perfil + workspace modal + logout)
+ */
+export default function TodoNavBar(props: TodoNavBarProps) {
+  const {
+    onOpenFooter,
+    isToday,
+    newTask,
+    setNewTask,
+    onSubmit,
+    priority,
+    setPriority,
+    isPersonalWorkspace,
+    meId,
+    members,
+    assignees,
+    setAssignees,
+  } = props;
+
+  const asg = useAssignees({
+    isPersonalWorkspace,
+    meId,
+    members,
+    assignees,
+    setAssignees,
+  });
+
+  const router = useRouter();
+
+  const sliderPosition = prioritySliderPosition(priority);
+
+  const { logout, user, isLoading: isAuthLoading } = useAuth();
+  const { resetDashboardState } = useTodoDashboard();
+
+  const { workspaces, currentWorkspaceId, setCurrentWorkspaceId } =
+    useWorkspaces();
+
+  const [workspaceOpen, setWorkspaceOpen] = useState(false);
+
+  const displayName = useMemo(() => {
+    if (!user) return "Cuenta";
+    const full = `${user.name ?? ""} ${user.lastName ?? ""}`.trim();
+    if (full) return full;
+    return user.email ? user.email.split("@")[0] : "Cuenta";
+  }, [user]);
+
+  const sharedWorkspace = useMemo(() => {
+    const extra = workspaces.find((w) => !w.isPersonal);
+    if (!extra) return null;
+    return { id: extra.id, name: extra.name };
+  }, [workspaces]);
+
+  function handleLogout() {
+    logout();
+    resetDashboardState();
+    router.replace("/login");
+  }
+
+  function switchWorkspace(id: string) {
+    if (!id || id === currentWorkspaceId) return;
+
+    setCurrentWorkspaceId(id);
+
+    scrollToId("home", { duration: 600, extraOffset: 12, navId: "app-navbar" });
+  }
+
+  async function handleDeleteAccount() {
+    try {
+      await authApi.deleteMe();
+
+      logout();
+      resetDashboardState();
+
+      router.replace("/login");
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  return (
+    <nav className="flex items-center gap-3 w-full">
+      {/* LEFT */}
+      <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-lg tracking-tight hidden max-[370px]:inline">
+            SF
+          </span>
+          <span className="font-semibold text-lg tracking-tight inline max-[370px]:hidden">
+            StaiFocus
+          </span>
+        </div>
+
+        <button
+          onClick={() => {
+            onOpenFooter();
+            scrollToId("footer", { duration: 900 });
+          }}
+          className="text-sm text-muted-foreground hover:text-foreground transition"
+        >
+          About it
+        </button>
+      </div>
+
+      {isToday && (
+        <div className="hidden min-[780px]:flex flex-1 min-w-0">
+          <form onSubmit={onSubmit} className="w-full">
+            <div
+              className="
+    group flex items-center gap-2 w-full
+    rounded-xl border border-border/60
+    bg-background/60 backdrop-blur
+    px-3 py-2
+    ring-1 ring-border/30
+
+    transition-all duration-200
+    motion-reduce:transition-none
+
+    hover:border-border/80
+    hover:ring-border/50
+    hover:bg-background/70
+    hover:shadow-[0_10px_30px_-18px_rgba(0,0,0,0.45)]
+    hover:-translate-y-[1px]
+
+    focus-within:border-primary/35
+    focus-within:ring-2 focus-within:ring-primary/25
+    focus-within:bg-background/75
+  "
+            >
+              {/* Sheen sutil */}
+              <div
+                className="
+      pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200
+      bg-[radial-gradient(650px_circle_at_10%_0%,rgba(255,255,255,0.10),transparent_55%)]
+      group-hover:opacity-100 group-focus-within:opacity-100
+      rounded-xl
+    "
+              />
+              <input
+                value={newTask}
+                onChange={(e) => setNewTask(e.target.value)}
+                placeholder="Crear tarea…"
+                className="flex-1 min-w-0 bg-transparent outline-none text-sm placeholder:text-muted-foreground/60"
+              />
+
+              {!isPersonalWorkspace && (
+                <div className="shrink-0">
+                  <AssigneesPicker members={members} asg={asg} />
+                </div>
+              )}
+
+              <div className="shrink-0">
+                <PrioritySwitch
+                  priority={priority}
+                  setPriority={setPriority}
+                  sliderPosition={sliderPosition}
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="
+    shrink-0 text-sm px-3 py-1.5 rounded-lg
+    bg-primary text-primary-foreground
+    ring-1 ring-primary/25
+
+    transition-all duration-200
+    hover:opacity-95 hover:-translate-y-[1px]
+    active:translate-y-0 active:opacity-90
+
+    focus-visible:outline-none
+    focus-visible:ring-2 focus-visible:ring-primary/35
+  "
+              >
+                +
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* RIGHT */}
+      <div className="flex items-center gap-2 shrink-0 ml-auto">
+        <WorkspaceSwitch
+          workspaces={workspaces}
+          currentWorkspaceId={currentWorkspaceId}
+          onSwitch={switchWorkspace}
+          onHome={() => scrollToId("home", { duration: 1000, extraOffset: 12 })}
+        />
+
+        <UserMenu
+          isLoading={isAuthLoading}
+          displayName={displayName}
+          email={user?.email}
+          phone={user?.phone ?? null}
+          sharedWorkspace={sharedWorkspace}
+          workspaceOpen={workspaceOpen}
+          setWorkspaceOpen={setWorkspaceOpen}
+          onLogout={handleLogout}
+          onDeleteAccount={handleDeleteAccount}
+        />
+      </div>
+    </nav>
+  );
+}

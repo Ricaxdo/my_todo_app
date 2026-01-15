@@ -1,31 +1,73 @@
-// src/tasks/task.model.ts
-import { Schema, model, type InferSchemaType } from "mongoose";
+import { Schema, model, type HydratedDocument, type Types } from "mongoose";
 
-// Definimos el schema de la colección "tasks"
-const taskSchema = new Schema(
+export type TaskSchema = {
+  text: string;
+  completed: boolean;
+  priority: "low" | "medium" | "high";
+  category: string;
+
+  workspaceId: Types.ObjectId;
+  createdBy: Types.ObjectId;
+
+  dueDate?: Date | null;
+
+  // temporal
+  owner?: Types.ObjectId | null;
+
+  assignees: Types.ObjectId[];
+
+  // timestamps
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+const taskSchema = new Schema<TaskSchema>(
   {
-    text: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    completed: {
-      type: Boolean,
-      default: false,
-    },
+    text: { type: String, required: true, trim: true },
+    completed: { type: Boolean, default: false },
     priority: {
       type: String,
       enum: ["low", "medium", "high"],
       default: "medium",
     },
-    category: {
-      type: String,
-      default: "General",
-      trim: true,
+    category: { type: String, default: "General", trim: true },
+
+    workspaceId: {
+      type: Schema.Types.ObjectId,
+      ref: "Workspace",
+      required: true,
+      index: true,
     },
+
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    dueDate: {
+      type: Date,
+      required: false,
+      index: true,
+    },
+
+    owner: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: false,
+      index: true,
+    },
+
+    assignees: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+        required: false,
+        index: true,
+      },
+    ],
   },
   {
-    // Esto agrega createdAt y updatedAt automáticamente
     timestamps: {
       createdAt: "createdAt",
       updatedAt: "updatedAt",
@@ -33,8 +75,5 @@ const taskSchema = new Schema(
   }
 );
 
-// Tipo TypeScript inferido desde el schema
-export type TaskDocument = InferSchemaType<typeof taskSchema>;
-
-// Modelo de Mongoose para interactuar con la colección "tasks"
-export const TaskModel = model<TaskDocument>("Task", taskSchema);
+export type TaskDocument = HydratedDocument<TaskSchema>;
+export const TaskModel = model<TaskSchema>("Task", taskSchema);
