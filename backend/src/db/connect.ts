@@ -1,10 +1,7 @@
-// src/db/connect.ts
 import mongoose from "mongoose";
+import { env } from "../config/env";
 
 export async function connectDB() {
-  const uri =
-    process.env.MONGODB_URI ?? "mongodb://127.0.0.1:27017/todo_dashboard";
-
-  await mongoose.connect(uri);
+  await mongoose.connect(env.mongoUri);
   console.log("[db] Conectado a MongoDB");
 }

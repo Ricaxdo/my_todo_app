@@ -1,6 +1,10 @@
 // URL base del backend.
 // Se toma desde env para producción y se cae a localhost en desarrollo.
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+if (!API_URL) {
+  throw new Error("Missing NEXT_PUBLIC_API_URL");
+}
 
 /**
  * Error normalizado que usa TODA la capa de services.
@@ -23,6 +27,8 @@ function joinUrl(base: string, path: string) {
   return `${b}${p}`;
 }
 
+const API_BASE: string = API_URL;
+
 /**
  * Fetch centralizado de la app.
  *
@@ -41,7 +47,7 @@ export async function apiFetch<T>(
   const token =
     typeof window === "undefined" ? null : localStorage.getItem("token");
 
-  const url = joinUrl(API_URL, path);
+  const url = joinUrl(API_BASE, path);
 
   let res: Response;
 
