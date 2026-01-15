@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import type React from "react";
+import { Suspense } from "react";
 import "./globals.css";
 
 import { RouteLoadingOverlay } from "@/components/navigation/RouteLoadingOverlay";
@@ -29,12 +30,14 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
-        <NavigationProvider>
-          <AuthProvider>
-            <RouteLoadingOverlay />
-            <WorkspaceProvider>{children}</WorkspaceProvider>
-          </AuthProvider>
-        </NavigationProvider>
+        <Suspense fallback={null}>
+          <NavigationProvider>
+            <AuthProvider>
+              <RouteLoadingOverlay />
+              <WorkspaceProvider>{children}</WorkspaceProvider>
+            </AuthProvider>
+          </NavigationProvider>
+        </Suspense>
       </body>
     </html>
   );
