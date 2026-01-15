@@ -1,14 +1,15 @@
 import "dotenv/config";
 
-import { env } from "./config/env";
 import { connectDB } from "./db/connect";
 import app from "./server";
 
 async function bootstrap() {
   await connectDB();
 
-  app.listen(env.port, () => {
-    console.log(`[backend] Servidor corriendo en http://localhost:${env.port}`);
+  const port = Number(process.env.PORT) || 8080;
+
+  app.listen(port, "0.0.0.0", () => {
+    console.log(`[backend] Servidor corriendo en puerto ${port}`);
   });
 }
 

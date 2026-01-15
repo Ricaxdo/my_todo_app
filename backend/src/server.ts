@@ -13,35 +13,42 @@ import { workspaceRoutes } from "./workspaces/workspace.routes";
 
 const app = express();
 
-app.use(
-  cors({
-    origin: (origin, cb) => {
-      const allowed = (process.env.CORS_ORIGIN ?? "")
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, cb) => {
+    const allowed = (process.env.CORS_ORIGIN ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
 
-      // Permite requests sin origin (Postman, curl, health checks)
-      if (!origin) return cb(null, true);
+    // Permite requests sin origin (Postman, curl, health checks)
+    if (!origin) return cb(null, true);
 
-      if (allowed.length === 0) return cb(null, true); // fallback dev si no configuras
-      return allowed.includes(origin)
-        ? cb(null, true)
-        : cb(new Error(`CORS blocked for origin: ${origin}`));
-    },
-    credentials: false, // OK si usas Authorization Bearer
-    allowedHeaders: ["Content-Type", "Authorization", "X-Timezone", "x-tz"],
-  })
-);
+    // Si no configuras CORS_ORIGIN, permite todo (fallback dev)
+    if (allowed.length === 0) return cb(null, true);
+
+    return allowed.includes(origin)
+      ? cb(null, true)
+      : cb(new Error(`CORS blocked for origin: ${origin}`));
+  },
+  credentials: false, // ✅ OK si usas Authorization: Bearer
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Timezone", "x-tz"],
+};
+
+app.use(cors(corsOptions));
+
+// ✅ CLAVE: responder preflight para todas las rutas
+app.options("*", cors(corsOptions));
 
 app.use(express.json());
 
 app.use("/", rootRouter);
-app.use("/todos", taskRoutes); // compat personala
+app.use("/todos", taskRoutes);
 
 app.use("/workspaces", workspaceRoutes);
-app.use("/workspaces", workspaceTodosRoutes); // shared by workspace
+app.use("/workspaces", workspaceTodosRoutes);
 app.use("/auth", authRouter);
+
 app.get("/health", (_req, res) => res.status(200).json({ ok: true }));
 
 app.use(notFoundHandler);
