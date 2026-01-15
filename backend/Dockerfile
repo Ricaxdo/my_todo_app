@@ -1,33 +1,23 @@
-# ---------- Build stage ----------
-FROM node:20-alpine AS builder
+# Imagen oficial de Node
+FROM node:20-alpine
 
+# Directorio de trabajo dentro del contenedor
 WORKDIR /app
 
-# Instala deps (incluye dev deps para compilar TS)
+# Copiamos package files primero (mejor cache)
 COPY package*.json ./
-RUN npm ci
 
-# Copia el código y compila
-COPY . .
-RUN npm run build
-
-# ---------- Runtime stage ----------
-FROM node:20-alpine AS runner
-
-WORKDIR /app
-ENV NODE_ENV=production
-
-# Instala solo dependencias de producción
-COPY package*.json ./
+# Instalamos dependencias
 RUN npm ci --omit=dev
 
-# Copia el build compilado
-COPY --from=builder /app/dist ./dist
+# Copiamos el resto del código
+COPY . .
 
-# (Opcional) Si tienes assets fuera de dist, copia lo necesario:
-# COPY --from=builder /app/public ./public
+# Compilamos TypeScript (si usas ts)
+RUN npm run build
 
-# Cloud Run inyecta PORT; tu app ya usa env.port (process.env.PORT)
-EXPOSE 4000
+# Cloud Run expone este puerto (informativo)
+EXPOSE 8080
 
+# Arranque
 CMD ["node", "dist/index.js"]
