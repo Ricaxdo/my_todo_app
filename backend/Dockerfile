@@ -1,23 +1,23 @@
-# Imagen oficial de Node
-FROM node:20-alpine
-
-# Directorio de trabajo dentro del contenedor
+# ---------- BUILD STAGE ----------
+FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Copiamos package files primero (mejor cache)
 COPY package*.json ./
+RUN npm ci
 
-# Instalamos dependencias
-RUN npm ci --omit=dev
-
-# Copiamos el resto del código
 COPY . .
-
-# Compilamos TypeScript (si usas ts)
 RUN npm run build
 
-# Cloud Run expone este puerto (informativo)
-EXPOSE 8080
+# ---------- RUN STAGE ----------
+FROM node:20-alpine
+WORKDIR /app
 
-# Arranque
+ENV NODE_ENV=production
+
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+COPY --from=builder /app/dist ./dist
+
+EXPOSE 8080
 CMD ["node", "dist/index.js"]
