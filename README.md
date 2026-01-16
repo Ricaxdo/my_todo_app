@@ -2,7 +2,7 @@
 
 StaiFocus es una aplicación fullstack de gestión de tareas orientada a productividad personal y trabajo organizado por espacios de trabajo.
 
-El proyecto está construido con una arquitectura moderna basada en Next.js en el frontend y una API REST en Express + TypeScript en el backend, con autenticación mediante JWT y despliegue en infraestructura cloud.
+El proyecto está construido con una arquitectura moderna basada en Next.js + TypeScript en el frontend y una API REST en Express + TypeScript en el backend, con autenticación mediante JWT y despliegue en infraestructura cloud.
 
 ## Live Demo
 
